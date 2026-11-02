@@ -348,7 +348,7 @@ textarea {
 footer {
     padding: 36px 0 48px;
 }
-a: focus-visible,button:focus-visible,textarea:focus-visible {
+a:focus-visible,button:focus-visible,textarea:focus-visible {
     outline: 3px solid var(--blue);
     outline-offset: 2px;
 }
@@ -1414,4 +1414,41 @@ html, body, .site-header, .page-content, .card, .notice, .q, .check, .opt, .sw, 
     .intro-loader__brand, .intro-loader__brand-wrap::before, .intro-loader__brand-wrap::after,
     .intro-loader__caption, .intro-loader__track, .intro-loader__status,
     .intro-loader__spark, .intro-loader__orbit { animation: none !important; opacity: 1 !important; clip-path: none !important; filter: none !important; transform: none !important; }
+}
+
+/* === LOGO VEKTOR (CSS) — override final: menetralkan sisa aturan logo PNG lama === */
+.site-header .header-inner > .logo,
+.site-header .header-inner > .logo:hover,
+:root[data-theme="dark"] .site-header .header-inner > .logo,
+:root[data-theme="light"] .site-header .header-inner > .logo {
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: auto !important;
+    min-height: 46px !important;
+    gap: 10px !important;
+    line-height: 1 !important;
+    overflow: visible !important;
+}
+.site-header .logo .jeda-mark {
+    width: 42px !important;
+    height: 42px !important;
+    gap: 5px !important;
+    flex: 0 0 42px !important;
+    border-radius: 12px !important;
+    background: #2944e8 !important;
+}
+.site-header .logo .jeda-mark i {
+    display: block !important;
+    width: 5px !important;
+    height: 20px !important;
+    border-radius: 3px !important;
+    background: #fff !important;
+}
+.site-header .logo .jeda-mark i::before,
+.site-header .logo .jeda-mark i::after { content: none !important; display: none !important; }
+.site-header .logo .logo-word { line-height: 1 !important; white-space: nowrap; }
+@media (max-width: 560px) {
+    .site-header .logo .jeda-mark { width: 38px !important; height: 38px !important; flex-basis: 38px !important; }
+    .site-header .logo .logo-word { font-size: 24px; }
 }

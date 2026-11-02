@@ -25,7 +25,10 @@
                 <span class="intro-loader__spark intro-loader__spark--one"></span>
                 <span class="intro-loader__spark intro-loader__spark--two"></span>
                 <span class="intro-loader__spark intro-loader__spark--three"></span>
-                <img class="intro-loader__brand" src="{{ asset('images/jeda-logo.png') }}" alt="">
+                <span class="intro-loader__halo intro-loader__halo--outer"></span>
+                <span class="intro-loader__halo intro-loader__halo--inner"></span>
+                <span class="jeda-mark jeda-mark--intro"><i></i><i></i></span>
+                <span class="intro-loader__wordmark">Jeda</span>
             </div>
             <p class="intro-loader__caption">Ambil jeda. Pikirkan dengan tenang.</p>
             <div class="intro-loader__track" aria-hidden="true"><span></span></div>
@@ -39,7 +42,8 @@
     <header class="site-header">
         <div class="wrap header-inner">
             <a class="logo" href="{{ route('home') }}" aria-label="Jeda, halaman utama">
-                <img class="site-logo-image" src="{{ asset('images/jeda-logo.png') }}" alt="Jeda">
+                <span class="jeda-mark" aria-hidden="true"><i></i><i></i></span>
+                <span class="logo-word">Jeda</span>
             </a>
 
             <nav class="site-nav" aria-label="Navigasi utama">
