@@ -21,7 +21,7 @@
 
             <div class="card">
                 <h2>Pesan atau tautan yang bikin ragu</h2>
-                <textarea aria-label="Pesan" style="min-height:180px">Selamat, kamu lolos jadi karyawan remote dengan gaji Rp8 juta per minggu. Konfirmasi dalam 30 menit dan jangan beri tahu siapa pun. Transfer biaya admin Rp150.000 untuk mengunci posisi. Klik: https://bankcontoh.com.login-verif.co.id/verifikasi</textarea>
+                <textarea aria-label="Pesan" placeholder="Tempel pesan yang ingin diperiksa..." style="min-height:180px"></textarea>
                 <div class="row">
                     <button class="btn block">Bedah pesan</button>
                 </div>
@@ -56,17 +56,13 @@
             <div class="card">
                 <div class="lvl">
                     <span>Tingkat tekanan</span>
-                    <em>Tinggi</em>
+                    <em>Belum diperiksa</em>
                 </div>
-                <div class="meter hi">
-                    <span class="f"></span>
-                    <span class="f"></span>
-                    <span class="f"></span>
-                    <span class="f"></span>
-                    <span></span>
+                <div class="meter">
+                    <span></span><span></span><span></span><span></span><span></span>
                 </div>
                 <p class="small" style="margin:10px 0 0">
-                    Ini tanda yang perlu dicek, bukan vonis penipuan.
+                    Hasil pemeriksaan akan muncul setelah kamu menekan tombol Bedah pesan.
                 </p>
             </div>
 

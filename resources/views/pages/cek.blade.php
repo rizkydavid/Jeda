@@ -21,7 +21,7 @@
             Jeda membaca pola alamat dan nama file untuk menunjukkan tanda bahayanya. Ini bukan vonis aman atau tidak.
         </p>
         <div class="row" style="justify-content:center;flex-wrap:nowrap;max-width:720px;margin:0 auto">
-            <input aria-label="URL" class="jeda-field" style="flex:1;min-width:0;border-radius:999px;padding:14px 20px" value="https://bankcontoh.com.login-verif.co.id/verifikasi"/>
+            <input aria-label="URL" class="jeda-field" style="flex:1;min-width:0;border-radius:999px;padding:14px 20px" placeholder="Tempel tautan yang ingin diperiksa..."/>
             <button class="btn" style="border-radius:999px;white-space:nowrap">
                 Periksa tautan
             </button>
@@ -36,46 +36,10 @@
                 <h2 style="margin:0">
                     Hasil pemeriksaan tautan
                 </h2>
-                <span class="small">
-                    2 tanda bahaya
-                </span>
             </div>
-            <div class="q" style="font-size:14px;word-break:break-all;margin:0">
-                https://
-                <span style="opacity:.55">
-                    bankcontoh.com.
-                </span>
-                <span class="mark t-rose">
-                    <b>
-                        login-verif.co.id
-                    </b>
-                </span>
-                <span style="opacity:.55">
-                    /verifikasi
-                </span>
-            </div>
-            <div class="flag">
-                <span class="tag t-rose">
-                    Menyamar sebagai merek
-                </span>
-                <p class="mut" style="margin:8px 0 0">
-                    Nama "bankcontoh" hanya subdomain. Domain utamanya login-verif.co.id.
-                </p>
-            </div>
-            <div class="flag">
-                <span class="tag t-amber">
-                    Kata pancingan
-                </span>
-                <p class="mut" style="margin:8px 0 0">
-                    Ada kata "login" dan "verifikasi" di alamat.
-                </p>
-            </div>
-            <div class="q">
-                <b>
-                    Langkah aman:
-                </b>
-                Buka situs resminya sendiri, jangan lewat tautan ini.
-            </div>
+            <p class="mut" style="margin:0">
+                Belum ada tautan yang diperiksa. Tempel tautan di kolom atas, lalu tekan "Periksa tautan".
+            </p>
             <a class="btn ghost block" href="{{ route('jam-emas') }}">
                 Sudah terlanjur klik? Lihat langkahnya
             </a>
@@ -97,33 +61,9 @@
                     Isi file tidak dibuka dan tidak diunggah.
                 </p>
             </div>
-            <div class="q" style="margin:0">
-                <b>
-                    Undangan_Pernikahan.pdf.apk
-                </b>
-            </div>
-            <div class="flag">
-                <span class="tag t-rose">
-                    Ekstensi ganda
-                </span>
-                <p class="mut" style="margin:8px 0 0">
-                    Kelihatan seperti PDF, tapi jenis aslinya APK.
-                </p>
-            </div>
-            <div class="flag">
-                <span class="tag t-amber">
-                    File yang memasang aplikasi
-                </span>
-                <p class="mut" style="margin:8px 0 0">
-                    APK bisa memasang aplikasi dan meminta akses ke ponselmu.
-                </p>
-            </div>
-            <div class="q">
-                <b>
-                    Langkah aman:
-                </b>
-                Jangan buka. Tanya pengirimnya lewat telepon langsung.
-            </div>
+            <p class="mut" style="margin:0">
+                Belum ada nama file yang diperiksa. Masukkan nama file di kolom yang tersedia, lalu tekan "Periksa nama file".
+            </p>
         </div>
     </div>
 </main>
