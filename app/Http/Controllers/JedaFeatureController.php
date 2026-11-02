@@ -120,7 +120,7 @@ class JedaFeatureController extends Controller
     public function saveChecklist(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'feature' => ['required', Rule::in(['jam-emas', 'cek-mandiri', 'keluarga', 'kartu'])],
+            'feature' => ['required', Rule::in(['jam-emas', 'keluarga', 'kartu'])],
             'situation' => ['nullable', 'string', 'max:80'],
             'item' => ['required', 'string', 'max:100', 'regex:/^[a-zA-Z0-9._-]+$/'],
             'done' => ['required', 'boolean'],
