@@ -208,30 +208,7 @@
         row.addEventListener('click',toggle); row.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle();}});
       });
 
-      // Bedah pesan: local heuristic only, no text is sent to a server.
-      const messageBox=$('textarea[aria-label="Pesan"]');
-      const homeButtons=$$('.card button');
-      const analyzeButton=homeButtons.find(b=>/bedah pesan/i.test(textOf(b)));
-      const sampleButton=homeButtons.find(b=>/pakai contoh fiktif/i.test(textOf(b)));
-      const riskWords=[['urgensi',/\b(sekarang|segera|30 menit|hari ini|terakhir|batas waktu|slot tinggal)\b/i],['kerahasiaan',/\b(jangan beri tahu|rahasia|jangan bilang|jangan cerita)\b/i],['permintaan uang',/\b(transfer|biaya admin|bayar|uang|rekening)\b/i],['kode atau akses',/\b(otp|kode verifikasi|kata sandi|password|pin)\b/i],['tautan',/https?:\/\//i]];
-      function runMessageAnalysis(){
-        const value=messageBox?.value.trim()||'';
-        if(!value){toast('Tempel pesan yang ingin diperiksa terlebih dahulu.');messageBox?.focus();return;}
-        const found=riskWords.filter(([,rx])=>rx.test(value)).map(([name])=>name);
-        const count=found.length; const level=count>=4?'Tinggi':count>=2?'Sedang':'Perlu diperiksa';
-        const levelEl=$('.lvl em'); if(levelEl) levelEl.textContent=level;
-        const meter=$('.meter'); if(meter){meter.classList.toggle('hi',count>=3);$$('span',meter).forEach((sp,i)=>sp.classList.toggle('f',i<Math.min(5,count)));}
-        const heading=$$('.stack h2, h2').find(h=>/tanda bahaya ditemukan/i.test(textOf(h)));
-        if(heading) heading.textContent=`${count} pola perlu diperiksa`;
-        let result=$('#localAnalysisResult');
-        if(!result){result=document.createElement('div');result.id='localAnalysisResult';result.className='notice';analyzeButton?.closest('.card')?.appendChild(result);}
-        result.innerHTML=`<strong>Hasil pemeriksaan lokal: ${level}</strong><br>${count?`Tanda yang terdeteksi: ${found.join(', ')}.`:'Belum ditemukan kata pemicu umum.'} <br><small>Ini pemeriksaan sederhana berbasis kata, bukan kepastian bahwa pesan aman atau penipuan.</small>`;
-        toast('Pemeriksaan lokal selesai.');
-      }
-      analyzeButton?.addEventListener('click',runMessageAnalysis);
-      sampleButton?.addEventListener('click',()=>{if(messageBox)messageBox.value='Selamat, kamu lolos seleksi. Konfirmasi dalam 30 menit, jangan beri tahu siapa pun, dan transfer biaya admin. Klik https://contoh.invalid/verifikasi';runMessageAnalysis();});
-      const aiButton=$$('.card button').find(b=>/kirim ke ai dan analisis/i.test(textOf(b)));
-      aiButton?.addEventListener('click',()=>toast('Integrasi AI belum dikonfigurasi. Untuk privasi, tidak ada pesan yang dikirim. Gunakan Bedah Pesan untuk pemeriksaan lokal.'));
+      // Bedah pesan: logika ada di public/js/bedah.js (hanya dimuat di halaman Bedah).
 
       // Link checker: parse URL locally and show its actual hostname.
       const linkInput=$('input[aria-label="URL"]');

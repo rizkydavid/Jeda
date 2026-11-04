@@ -15,6 +15,7 @@ Route::view('/batasan', 'pages.batasan')->name('batasan');
 /* API internal untuk menyimpan hasil dan progres fitur. */
 Route::prefix('jeda/api')->name('jeda.api.')->group(function () {
     Route::post('/analisis-pesan', [JedaFeatureController::class, 'analyzeMessage'])->name('analyze-message');
+    Route::post('/bedah-ai', [JedaFeatureController::class, 'analyzeMessageWithAi'])->middleware('throttle:10,1')->name('bedah-ai');
     Route::post('/cek-tautan', [JedaFeatureController::class, 'checkLink'])->name('check-link');
     Route::post('/cek-file', [JedaFeatureController::class, 'checkFile'])->name('check-file');
     Route::post('/simulasi', [JedaFeatureController::class, 'saveSimulation'])->name('simulation');

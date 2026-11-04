@@ -32,17 +32,7 @@
     }
   }
 
-  // Bedah pesan: hasil deteksi tetap dihitung di browser; database hanya menerima panjang dan indikator, bukan isi pesan.
-  const messageBox = $('textarea[aria-label="Pesan"]');
-  const analyzeButton = $$('button').find(b => /^bedah pesan$/i.test(text(b)));
-  const sampleButton = $$('button').find(b => /pakai contoh fiktif/i.test(text(b)));
-  async function saveMessageAnalysis() {
-    const value = messageBox?.value.trim();
-    if (!value) return;
-    await post('/jeda/api/analisis-pesan', {text:value}, true);
-  }
-  analyzeButton?.addEventListener('click', () => { setTimeout(saveMessageAnalysis, 30); });
-  sampleButton?.addEventListener('click', () => { setTimeout(saveMessageAnalysis, 60); });
+  // Bedah pesan: logika dan pencatatan progres ada di public/js/bedah.js (hanya dimuat di halaman Bedah).
 
   // Pemeriksaan tautan: server hanya menyimpan hostname, bukan URL penuh.
   const linkInput = $('input[aria-label="URL"]');

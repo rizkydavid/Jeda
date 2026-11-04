@@ -15,13 +15,25 @@ Melalui berbagai fitur pemeriksaan, latihan, dan edukasi, Jeda mendorong penggun
 ## ✨ Fitur Utama
 
 ### 1. Bedah Pesan
-Membantu pengguna memahami dan memeriksa pesan yang berpotensi mengandung penipuan atau manipulasi.
+Membantu pengguna memahami dan memeriksa pesan yang berpotensi mengandung penipuan atau manipulasi. Hasilnya adalah indikator risiko, bukan vonis.
 
-Pemeriksaan berfokus pada indikator seperti:
-- Permintaan informasi pribadi.
-- Pesan yang menggunakan tekanan atau urgensi.
-- Tawaran yang tidak wajar.
-- Ajakan melakukan tindakan mencurigakan.
+**Lapis 1: pemeriksaan lokal (selalu aktif).** Berjalan di browser (`public/js/bedah.js`), tanpa mengirim teks ke server. Berbasis aturan dengan skor berbobot (0-100), bukan machine learning. Yang diperiksa:
+- Tekanan waktu, permintaan merahasiakan, permintaan uang, permintaan OTP/PIN/data pribadi.
+- Iming-iming hadiah atau pekerjaan, mengaku pihak resmi, ancaman, mengaku kenalan dengan nomor baru.
+- Tautan di dalam pesan: nama merek di subdomain, kata pancingan, IP langsung, pemendek tautan, link file `.apk`.
+- Teks dinormalisasi dulu, jadi variasi seperti `0TP`, `tr4nsfer`, atau `o t p` tetap terdeteksi.
+- Kombinasi pola berbahaya (misalnya uang + tekanan) menambah skor.
+
+Server hanya mencatat skor, daftar id indikator, dan panjang teks untuk progres sesi. Isi pesan tidak dikirim.
+
+**Lapis 2: analisis AI (opsional).** Tombol "Kirim ke AI dan analisis" memanggil `POST /jeda/api/bedah-ai`. Nomor HP, rekening, dan email disamarkan di server sebelum dikirim ke API, teks tidak disimpan, dan hasilnya diberi label "Dianalisis AI, bisa salah". Untuk mengaktifkan, isi di `.env`:
+
+```
+ANTHROPIC_API_KEY=sk-ant-...
+JEDA_AI_MODEL=claude-haiku-5-5   # opsional
+```
+
+Tanpa API key, tombol ini menampilkan pesan bahwa AI belum aktif dan pemeriksaan lokal tetap berfungsi.
 
 ### 2. Cek Tautan
 Membantu pengguna mengevaluasi tautan untuk mengenali indikator yang berpotensi berbahaya sebelum membukanya.

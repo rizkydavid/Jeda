@@ -28,6 +28,22 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    // Analisis AI di halaman Bedah (opsional). Isi salah satu key di .env.
+    // JEDA_AI_PROVIDER=gemini|anthropic bersifat opsional; kalau kosong dipakai yang key-nya terisi.
+    'jeda_ai' => [
+        'provider' => env('JEDA_AI_PROVIDER'),
+    ],
+
+    'gemini' => [
+        'key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-2.5-flash'),
+    ],
+
+    'anthropic' => [
+        'key' => env('ANTHROPIC_API_KEY'),
+        'model' => env('JEDA_AI_MODEL', 'claude-haiku-5-5'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
