@@ -27,9 +27,7 @@
             <b style="color:#cfd8ff;display:block;margin-bottom:4px">Dari kamu</b>
             <span id="isiPesan"></span>
         </div>
-        <a class="btn block" id="kirimWa" href="#" target="_blank" rel="noopener" style="margin-top:14px">
-            Kirim lewat WhatsApp
-        </a>
+        <a class="btn block" id="kirimWa" href="#" style="margin-top:14px">Kirim lewat WhatsApp</a>
     </div>
 </main>
 
@@ -44,18 +42,29 @@
     const chips = document.querySelectorAll('#orang .chip');
     const isiPesan = document.getElementById('isiPesan');
     const kirimWa = document.getElementById('kirimWa');
+    const salinPesan = document.getElementById('salinPesan');
 
-    function tampilkan(kunci) {
-        isiPesan.textContent = pesan[kunci];
-        kirimWa.href = 'https://wa.me/?text=' + encodeURIComponent(pesan[kunci]);
-    }
+    // Satu-satunya sumber teks adalah pratinjau di layar: yang kamu lihat = yang dikirim.
+    const teksAktif = () => isiPesan.textContent.trim();
 
     chips.forEach(c => c.addEventListener('click', () => {
         chips.forEach(x => x.classList.toggle('on', x === c));
-        tampilkan(c.dataset.orang);
+        isiPesan.textContent = pesan[c.dataset.orang];
     }));
 
-    tampilkan('ortu');
+    kirimWa.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const teks = teksAktif();
+
+        // Di HP: buka lembar bagikan bawaan, teksnya persis sama dengan pratinjau.
+        if (navigator.share && /Android|iPhone|iPad/i.test(navigator.userAgent)) {
+            try { await navigator.share({ text: teks }); return; }
+            catch (err) { if (err.name === 'AbortError') return; }
+        }
+        // Di komputer: langsung ke API WhatsApp (tanpa perantara wa.me).
+        window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(teks), '_blank', 'noopener');
+    });
+    isiPesan.textContent = pesan.ortu;
 </script>
 
 @endsection
