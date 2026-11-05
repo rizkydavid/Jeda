@@ -52,7 +52,6 @@
                 <a href="{{ route('simulasi') }}" @class(['on' => request()->routeIs('simulasi')])>Latihan</a>
                 <a href="{{ route('jam-emas') }}" @class(['on' => request()->routeIs('jam-emas')])>Jam Emas</a>
                 <a href="{{ route('keluarga') }}" @class(['on' => request()->routeIs('keluarga')])>Keluarga</a>
-                <a href="{{ route('kartu') }}" @class(['on' => request()->routeIs('kartu')])>Kartu</a>
                 <a class="pill" href="{{ route('batasan') }}" @class(['on' => request()->routeIs('batasan')])>Tanpa akun</a>
             </nav>
             <button class="theme-toggle" id="themeToggle" type="button" aria-label="Aktifkan mode gelap" aria-pressed="false" title="Ganti mode terang/gelap">

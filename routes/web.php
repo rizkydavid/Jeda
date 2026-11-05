@@ -12,7 +12,6 @@ Route::view('/cek', 'pages.cek')->name('cek');
 Route::view('/latihan', 'pages.simulasi')->name('simulasi');
 Route::view('/jam-emas', 'pages.jam-emas')->name('jam-emas');
 Route::view('/keluarga', 'pages.keluarga')->name('keluarga');
-Route::view('/kartu', 'pages.kartu')->name('kartu');
 Route::view('/batasan', 'pages.batasan')->name('batasan');
 
 /* API internal untuk menyimpan hasil dan progres fitur (URL & nama route tetap sama). */
