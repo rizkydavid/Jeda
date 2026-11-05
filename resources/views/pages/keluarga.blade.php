@@ -20,42 +20,16 @@
         <span class="chip" data-orang="teman" style="cursor:pointer">Teman</span>
     </div>
 
-    <div class="grid2">
-        <div class="stack">
-            <h2 style="margin:0">Penipuan yang sering menyasar orang tua</h2>
-            <div class="flag">
-                <span class="tag t-rose">Impersonasi</span>
-                <h3 style="margin-top:8px">"Ma, ini nomor baru aku, tolong transfer dulu"</h3>
-                <p class="mut" style="margin:0">Mengaku anak sendiri dari nomor tak dikenal, dengan alasan mendesak.</p>
-            </div>
-            <div class="flag">
-                <span class="tag t-amber">Urgensi</span>
-                <h3 style="margin-top:8px">Undangan atau resi paket berformat file APK</h3>
-                <p class="mut" style="margin:0">File yang diminta dipasang bisa mengambil alih ponsel. Contoh di Jeda fiktif dan aman.</p>
-            </div>
-            <div class="flag">
-                <span class="tag t-violet">Otoritas</span>
-                <h3 style="margin-top:8px">"Kami dari bank, akun Bapak diblokir"</h3>
-                <p class="mut" style="margin:0">Mengaku petugas dan meminta kode OTP.</p>
-            </div>
-            <a class="btn block" href="{{ route('simulasi') }}">
-                Coba simulasi sebagai orang tua
-            </a>
+    <div class="card" style="max-width:640px">
+        <h2 style="margin-top:0">Kartu peringatan siap kirim</h2>
+        <p class="small">Pratinjau pesan WhatsApp</p>
+        <div class="bubble me" style="max-width:100%;border-radius:16px">
+            <b style="color:#cfd8ff;display:block;margin-bottom:4px">Dari kamu</b>
+            <span id="isiPesan"></span>
         </div>
-
-        <div class="stack">
-            <div class="card">
-                <h2>Kartu peringatan siap kirim</h2>
-                <p class="small">Pratinjau pesan WhatsApp</p>
-                <div class="bubble me" style="max-width:100%;border-radius:16px">
-                    <b style="color:#cfd8ff">Dari kamu</b>
-                    <span id="isiPesan">Ma, ada penipuan yang lagi ramai: ada yang ngaku jadi aku dan minta transfer. Kalau ada pesan begitu, telepon aku dulu ya, jangan langsung transfer.</span>
-                </div>
-                <a class="btn block" href="javascript:void(0)" style="margin-top:14px">
-                    Kirim lewat WhatsApp
-                </a>
-            </div>
-        </div>
+        <a class="btn block" id="kirimWa" href="#" target="_blank" rel="noopener" style="margin-top:14px">
+            Kirim lewat WhatsApp
+        </a>
     </div>
 </main>
 
@@ -69,11 +43,19 @@
 
     const chips = document.querySelectorAll('#orang .chip');
     const isiPesan = document.getElementById('isiPesan');
+    const kirimWa = document.getElementById('kirimWa');
+
+    function tampilkan(kunci) {
+        isiPesan.textContent = pesan[kunci];
+        kirimWa.href = 'https://wa.me/?text=' + encodeURIComponent(pesan[kunci]);
+    }
 
     chips.forEach(c => c.addEventListener('click', () => {
         chips.forEach(x => x.classList.toggle('on', x === c));
-        isiPesan.textContent = pesan[c.dataset.orang];
+        tampilkan(c.dataset.orang);
     }));
+
+    tampilkan('ortu');
 </script>
 
 @endsection
