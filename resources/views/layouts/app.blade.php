@@ -16,6 +16,10 @@
     </script>
     <link rel="stylesheet" href="{{ asset('css/style.css') }}">
     <link rel="stylesheet" href="{{ asset('css/nav-mobile.css') }}?v={{ @filemtime(public_path('css/nav-mobile.css')) }}">
+    @if (request()->routeIs('simulasi'))
+        <link rel="stylesheet" href="{{ asset('css/latihan.css') }}">
+    @endif
+    @stack('styles')
 </head>
 <body>
     <div class="intro-loader" id="introLoader" aria-label="Memuat Jeda" role="status">
@@ -281,5 +285,6 @@
 
     <script src="{{ asset('js/nav.js') }}?v={{ @filemtime(public_path('js/nav.js')) }}" defer></script>
     <script src="{{ asset('js/jeda-backend.js') }}" defer></script>
+    @stack('scripts')
 </body>
 </html>
