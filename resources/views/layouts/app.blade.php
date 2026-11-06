@@ -15,6 +15,11 @@
         })();
     </script>
     <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/nav-mobile.css') }}?v={{ @filemtime(public_path('css/nav-mobile.css')) }}">
+    @if (request()->routeIs('simulasi'))
+        <link rel="stylesheet" href="{{ asset('css/latihan.css') }}">
+    @endif
+    @stack('styles')
 </head>
 <body>
     <div class="intro-loader" id="introLoader" aria-label="Memuat Jeda" role="status">
@@ -46,21 +51,28 @@
                 <span class="logo-word">Jeda</span>
             </a>
 
-            <nav class="site-nav" aria-label="Navigasi utama">
+            <nav class="site-nav" id="siteNav" aria-label="Navigasi utama">
+                <div class="nav-drawer-head">
+                    <span>Menu</span>
+                    <button class="nav-close" type="button" aria-label="Tutup menu">✕</button>
+                </div>
                 <a href="{{ route('home') }}" @class(['on' => request()->routeIs('home')])>Bedah</a>
                 <a href="{{ route('cek') }}" @class(['on' => request()->routeIs('cek')])>Cek</a>
                 <a href="{{ route('simulasi') }}" @class(['on' => request()->routeIs('simulasi')])>Latihan</a>
                 <a href="{{ route('jam-emas') }}" @class(['on' => request()->routeIs('jam-emas')])>Jam Emas</a>
                 <a href="{{ route('keluarga') }}" @class(['on' => request()->routeIs('keluarga')])>Keluarga</a>
-                <a href="{{ route('kartu') }}" @class(['on' => request()->routeIs('kartu')])>Kartu</a>
                 <a class="pill" href="{{ route('batasan') }}" @class(['on' => request()->routeIs('batasan')])>Tanpa akun</a>
             </nav>
             <button class="theme-toggle" id="themeToggle" type="button" aria-label="Aktifkan mode gelap" aria-pressed="false" title="Ganti mode terang/gelap">
                 <span class="theme-toggle__icon" aria-hidden="true">☾</span>
                 <span class="theme-toggle__label">Mode gelap</span>
             </button>
+            <button class="nav-toggle" id="navToggle" type="button" aria-label="Buka menu" aria-controls="siteNav" aria-expanded="false">
+                <span class="nav-toggle__bar"></span><span class="nav-toggle__bar"></span><span class="nav-toggle__bar"></span>
+            </button>
         </div>
     </header>
+    <div class="nav-backdrop" id="navBackdrop" aria-hidden="true"></div>
 
     <main class="page-content">
         @yield('content')
@@ -259,6 +271,8 @@
     })();
     </script>
 
+    <script src="{{ asset('js/nav.js') }}?v={{ @filemtime(public_path('js/nav.js')) }}" defer></script>
     <script src="{{ asset('js/jeda-backend.js') }}" defer></script>
+    @stack('scripts')
 </body>
 </html>

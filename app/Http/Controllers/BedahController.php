@@ -162,9 +162,10 @@ class BedahController extends Controller
                 }
 
                 $response = Http::withHeaders(['x-goog-api-key' => $provider['key']])
-                    ->acceptJson()->connectTimeout(10)->timeout(45)
+                    // Timeout dinaikkan ke 120 detik dan dipaksa pakai IPv4 supaya tidak mudah timeout.
+                    ->acceptJson()->connectTimeout(15)->timeout(120)->withOptions(['force_ip_resolve' => 'v4'])
                     // Lonjakan permintaan di sisi Google biasanya sebentar: coba ulang otomatis untuk 429/500/503.
-                    ->retry(3, 1500, fn ($e) => $e instanceof \Illuminate\Http\Client\RequestException
+                    ->retry(5, 3000, fn ($e) => $e instanceof \Illuminate\Http\Client\RequestException
                         && in_array($e->response->status(), [429, 500, 503], true), throw: false)
                     ->post("https://generativelanguage.googleapis.com/v1beta/models/{$provider['model']}:generateContent", [
                         'systemInstruction' => ['parts' => [['text' => $this->aiSystemPrompt()]]],

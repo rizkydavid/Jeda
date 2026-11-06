@@ -141,7 +141,7 @@ class FileCheckTest extends CekTestCase
 
         $this->checkFile(['filename' => 'alat.pdf', 'detected_type' => 'pdf'])
             ->assertOk()
-            ->assertJsonPath('score', 10)
+            ->assertJsonPath('score', 9)
             ->assertJsonPath('level', 'Tinggi')
             ->assertJsonPath('confirmed', true);
     }

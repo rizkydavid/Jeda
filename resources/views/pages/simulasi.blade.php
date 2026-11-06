@@ -3,56 +3,50 @@
 @section('title', 'Latihan Kenali Penipuan')
 
 @section('content')
-<style>
-    .quiz-page{--q-ink:#13233f;--q-muted:#687792;--q-line:#e1e8f2;--q-blue:#3768e8;max-width:1160px;margin:0 auto;padding:32px 20px 68px;color:var(--text,#17233c)}
-    .quiz-hero{position:relative;isolation:isolate;overflow:hidden;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(220px,.75fr);align-items:center;gap:24px;min-height:255px;border-radius:30px;padding:34px 38px;margin-bottom:24px;color:#fff;background:radial-gradient(circle at 85% 20%,rgba(75,205,205,.35),transparent 28%),linear-gradient(120deg,#10294c 0%,#194f78 52%,#3768c9 100%);box-shadow:0 22px 55px rgba(25,62,115,.2)}
-    .quiz-hero:before,.quiz-hero:after{content:"";position:absolute;z-index:-1;border:1px solid rgba(255,255,255,.13);border-radius:50%;width:300px;height:300px;right:-70px;top:-110px}.quiz-hero:after{width:210px;height:210px;right:-25px;top:-65px}
-    .quiz-hero-copy{position:relative;z-index:1}.quiz-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:.75rem;font-weight:850;letter-spacing:.12em;text-transform:uppercase;color:#8ff0e0;margin-bottom:13px}
-    .quiz-hero h1{font-size:clamp(1.85rem,3.8vw,3rem);line-height:1.08;letter-spacing:-.045em;margin:0 0 13px;max-width:650px;color:#fff}.quiz-hero p{max-width:650px;color:rgba(255,255,255,.78);line-height:1.7;margin:0;font-size:.98rem}
-    .quiz-pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:21px}.quiz-pill{display:inline-flex;align-items:center;gap:7px;border:1px solid rgba(255,255,255,.19);border-radius:999px;padding:8px 12px;font-size:.8rem;color:#fff;background:rgba(255,255,255,.09);backdrop-filter:blur(8px)}
-    .quiz-hero-art{min-height:175px;display:grid;place-items:center;position:relative}.quiz-shield{width:150px;height:165px;display:grid;place-items:center;position:relative;clip-path:polygon(50% 0,92% 16%,86% 68%,50% 100%,14% 68%,8% 16%);background:linear-gradient(145deg,#a7f3e5,#58b7d6);filter:drop-shadow(0 18px 18px rgba(0,0,0,.18));color:#123e66;font-size:4.4rem}.quiz-orbit{position:absolute;width:210px;height:210px;border:1px dashed rgba(255,255,255,.32);border-radius:50%;animation:quiz-orbit 28s linear infinite}.quiz-orbit:before,.quiz-orbit:after{content:"✦";position:absolute;color:#ffe7a2;font-size:1.25rem}.quiz-orbit:before{top:20px;left:30px}.quiz-orbit:after{right:12px;bottom:35px}@keyframes quiz-orbit{to{transform:rotate(360deg)}}
-    .quiz-levels{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:22px}.quiz-level-card{border:1px solid var(--q-line);border-radius:17px;padding:17px;background:#fff;text-align:left;cursor:pointer;transition:.18s;min-height:130px}.quiz-level-card:hover:not(:disabled){transform:translateY(-2px);border-color:#86a5f5;box-shadow:0 8px 20px rgba(50,94,180,.08)}.quiz-level-card:disabled{opacity:.55;cursor:not-allowed;background:#f4f6fa}.quiz-level-card strong{display:block;color:var(--q-ink);font-size:1rem;margin:7px 0}.quiz-level-card span{font-size:.82rem;color:var(--q-muted);line-height:1.5}.quiz-level-card .level-icon{font-size:1.5rem}.quiz-level-card .level-status{display:inline-block;margin-top:10px;font-size:.72rem;font-weight:800;color:#3768e8}.quiz-save-status{font-size:.88rem;line-height:1.5;margin-top:12px;color:var(--q-muted)}@media(max-width:600px){.quiz-levels{grid-template-columns:1fr}.quiz-level-card{min-height:0}}
-    .quiz-layout{display:grid;grid-template-columns:minmax(0,1fr) 285px;gap:22px;align-items:start}.quiz-panel,.quiz-aside{border:1px solid var(--q-line);border-radius:25px;background:var(--card,#fff);padding:27px;box-shadow:0 14px 38px rgba(20,40,70,.055)}
-    .quiz-topline{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:13px;font-size:.88rem;color:var(--q-muted)}#quizCounter{font-weight:800;color:var(--q-ink)}#quizScoreLive{border-radius:999px;padding:7px 12px;background:#eef3ff;color:#3659bf;font-size:.82rem}
-    .quiz-progress{height:9px;background:#edf1f7;border-radius:99px;overflow:hidden;margin-bottom:25px}.quiz-progress span{height:100%;display:block;width:0;background:linear-gradient(90deg,#39c6b3,#4776ed);border-radius:99px;transition:width .3s ease}
-    .quiz-topic{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border-radius:9px;background:#edf8f7;color:#167e79;font-size:.78rem;font-weight:850;margin-bottom:12px}.quiz-topic:before{content:"●";font-size:.55rem}
-    .quiz-question{font-size:clamp(1.25rem,2.4vw,1.7rem);line-height:1.35;margin:0 0 17px;letter-spacing:-.025em;color:var(--q-ink)}
-    .quiz-context{position:relative;padding:19px 19px 19px 58px;border:1px solid #dce8f7;border-radius:17px;background:linear-gradient(120deg,#f5f9ff,#f8fbff);line-height:1.7;margin-bottom:21px;color:#3e506d;font-size:.94rem}.quiz-context:before{content:"“";position:absolute;left:17px;top:13px;width:28px;height:28px;display:grid;place-items:center;border-radius:9px;background:#dfeaff;color:#3568d4;font-size:1.7rem;font-weight:900;line-height:1}
-    .quiz-choices{display:grid;grid-template-columns:1fr 1fr;gap:11px}.quiz-choice{min-height:80px;width:100%;text-align:left;display:flex;gap:12px;align-items:flex-start;border:1px solid var(--q-line);border-radius:16px;padding:15px;background:#fff;color:#34445f;cursor:pointer;font:inherit;font-size:.91rem;line-height:1.5;transition:border-color .18s,background .18s,transform .18s,box-shadow .18s}.quiz-choice:hover:not(:disabled){border-color:#8caaf7;transform:translateY(-2px);box-shadow:0 8px 20px rgba(50,94,180,.08);background:#f9fbff}.quiz-choice:focus-visible,.quiz-btn:focus-visible{outline:3px solid rgba(60,130,210,.35);outline-offset:2px}
-    .quiz-letter{flex:0 0 31px;height:31px;border:1px solid #dce5f2;border-radius:10px;display:grid;place-items:center;font-weight:900;font-size:.82rem;color:#53709c;background:#f7f9fc}.quiz-choice.correct{border-color:#25a77a;background:#ecfaf4;color:#145d47;box-shadow:inset 0 0 0 1px #25a77a}.quiz-choice.correct .quiz-letter{background:#d2f5e7;border-color:#a5e5ce;color:#137957}.quiz-choice.wrong{border-color:#e17b7b;background:#fff2f1;color:#853c3c}.quiz-choice.wrong .quiz-letter{background:#ffe0dd;border-color:#f2c2bd;color:#a34242}.quiz-choice:disabled{cursor:default}
-    .quiz-feedback{margin-top:17px;border-radius:15px;padding:16px 18px;line-height:1.65;display:none;font-size:.92rem}.quiz-feedback.show{display:block}.quiz-feedback.good{background:#ecfaf4;border:1px solid #bcebd8;color:#175e48}.quiz-feedback.review{background:#fff8e9;border:1px solid #f2dfad;color:#73551d}.quiz-feedback strong{display:block;margin-bottom:5px;font-size:.96rem}
-    .quiz-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:21px;flex-wrap:wrap}.quiz-btn{border:1px solid var(--q-line);border-radius:12px;padding:12px 17px;font:inherit;font-size:.9rem;font-weight:850;cursor:pointer;background:#fff;color:#41516b;transition:transform .15s,box-shadow .15s}.quiz-btn:hover:not(:disabled){transform:translateY(-1px)}.quiz-btn.primary{background:linear-gradient(120deg,#386be5,#4b7dec);color:#fff;border-color:transparent;box-shadow:0 8px 18px rgba(57,104,221,.2)}.quiz-btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
-    .quiz-aside{padding:23px;position:relative;overflow:hidden}.quiz-aside h3{margin:0 0 9px;font-size:1.04rem;color:var(--q-ink)}.quiz-aside .aside-intro{font-size:.88rem;line-height:1.65;color:var(--q-muted);margin:0 0 18px}.quiz-mini-stat{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:16px 0 22px}.quiz-stat{padding:13px;border:1px solid var(--q-line);border-radius:15px;background:#fbfcff}.quiz-stat b{font-size:1.45rem;display:block;letter-spacing:-.03em;color:var(--q-ink)}.quiz-stat span{font-size:.76rem;color:var(--q-muted)}
-    .quiz-principles{display:grid;gap:10px;margin-top:14px}.quiz-principle{display:flex;align-items:center;gap:11px;padding:10px;border-radius:13px;background:#f7f9fd;color:#52627c;font-size:.82rem;line-height:1.45}.quiz-principle-icon{width:34px;height:34px;flex:0 0 34px;display:grid;place-items:center;border-radius:10px;background:#e5edff;color:#3d68d4;font-size:1rem}.quiz-principle strong{display:block;color:#263b5a;font-size:.83rem;margin-bottom:2px}
-    .quiz-result{text-align:center;padding:15px 0 4px}.quiz-result-score{font-size:clamp(3.4rem,10vw,5.4rem);font-weight:950;letter-spacing:-.07em;line-height:1;margin:15px 0 8px;color:#3569df}.quiz-result h2{margin:0 0 10px;font-size:1.7rem;color:var(--q-ink)}.quiz-result p{max-width:620px;margin:0 auto 18px;line-height:1.7;color:var(--q-muted)}.quiz-result-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:22px 0;text-align:left}.quiz-result-grid .quiz-stat{background:#f7f9fd}.quiz-review{margin-top:18px;text-align:left;border-top:1px solid var(--q-line);padding-top:18px}.quiz-review h3{color:var(--q-ink)}.quiz-review-item{padding:13px 0;border-bottom:1px solid var(--q-line);line-height:1.6;color:#354863}.quiz-review-item small{display:block;color:var(--q-muted);margin-top:5px;line-height:1.65}.quiz-hidden{display:none!important}
-    @media(max-width:850px){.quiz-layout{grid-template-columns:1fr}.quiz-aside{order:2}.quiz-hero{grid-template-columns:1fr minmax(150px,.45fr);padding:27px}.quiz-hero-art{min-height:140px}.quiz-shield{width:112px;height:128px;font-size:3.3rem}.quiz-orbit{width:160px;height:160px}}
-    @media(max-width:600px){.quiz-page{padding:20px 13px 45px}.quiz-hero{grid-template-columns:1fr;padding:25px 22px;border-radius:23px}.quiz-hero-art{display:none}.quiz-hero h1{font-size:2rem}.quiz-pills{gap:7px}.quiz-pill{font-size:.74rem;padding:7px 9px}.quiz-panel{padding:18px;border-radius:20px}.quiz-choices{grid-template-columns:1fr}.quiz-choice{min-height:0}.quiz-context{padding:15px 15px 15px 49px}.quiz-aside{padding:19px}.quiz-result-grid{grid-template-columns:1fr 1fr}.quiz-result-grid .quiz-stat:last-child{grid-column:1/-1}}
-    @media(prefers-reduced-motion:reduce){.quiz-choice,.quiz-progress span,.quiz-orbit{transition:none;animation:none}}
-</style>
-
 <main class="quiz-page">
+    {{-- Hero --}}
     <section class="quiz-hero">
         <div class="quiz-hero-copy">
             <div class="quiz-eyebrow"><span aria-hidden="true">✦</span> JEDA DIGITAL SAFETY</div>
             <h1>Jangan asal klik.<br>Belajar kenali tanda.</h1>
-            <p>Uji insting digitalmu lewat 10 situasi sehari-hari. Pilih tindakan terbaik, lalu pelajari alasannya—agar makin siap menghadapi pesan yang mencurigakan.</p>
-            <div class="quiz-pills"><span class="quiz-pill">◈ 10 kasus nyata</span><span class="quiz-pill">◷ ± 5 menit</span><span class="quiz-pill">✓ Ada pembahasan</span></div>
+            <p>Uji insting digitalmu lewat situasi sehari-hari. Pilih tindakan terbaik, kumpulkan EXP, dan naikkan levelmu hingga tingkat 10!</p>
+            <div class="quiz-pills"><span class="quiz-pill">◈ 10 Level Tantangan</span><span class="quiz-pill">◷ ± 5 menit</span><span class="quiz-pill">✓ Sistem EXP & Level</span></div>
         </div>
         <div class="quiz-hero-art" aria-hidden="true"><div class="quiz-orbit"></div><div class="quiz-shield">✓</div></div>
     </section>
 
     <div class="quiz-layout">
         <section class="quiz-panel" aria-live="polite">
+            {{-- Pilih level --}}
             <div id="quizLevelSelect">
-                <h2 class="quiz-question">Pilih level latihan</h2>
-                <p class="aside-intro">Selesaikan level sebelumnya dengan nilai minimal 70% untuk membuka level berikutnya. Soal dipilih secara acak dan berganti setiap hari.</p>
+                <h2 class="quiz-title">Pilih level latihan</h2>
+                <p class="quiz-intro">Setiap jawaban benar memberi EXP. Kumpulkan EXP dari ronde ke ronde untuk membuka level berikutnya. Soal dipilih acak dan berganti setiap hari.</p>
+
+                <div class="quiz-player" id="quizPlayer"></div>
                 <div class="quiz-levels" id="quizLevels"></div>
+
+                <ul class="quiz-rules">
+                    <li><b>EXP per jawaban benar</b>Makin tinggi level, makin besar EXP-nya.</li>
+                    <li><b>Bonus sempurna</b>Jawab 10 dari 10 benar untuk bonus EXP tambahan.</li>
+                    <li><b>Main ulang bebas</b>Level yang sudah terbuka bisa dimainkan kapan saja.</li>
+                </ul>
                 <div class="quiz-save-status" id="quizProgressStatus" role="status">Memuat progres latihan...</div>
             </div>
+
+            {{-- Bermain --}}
             <div id="quizPlay" class="quiz-hidden">
-                <div class="quiz-topline"><button type="button" class="quiz-btn" id="quizBackToLevels">← Semua level</button><span id="quizLevelName"></span></div>
-                <div class="quiz-topline"><span id="quizCounter">Pertanyaan 1 dari 10</span><strong id="quizScoreLive">Skor: 0</strong></div>
-                <div class="quiz-progress" aria-label="Progres latihan"><span id="quizProgressBar"></span></div>
+                <div class="quiz-topline">
+                    <button type="button" class="quiz-btn" id="quizBackToLevels">← Semua level</button>
+                    <span id="quizLevelName"></span>
+                </div>
+                <div class="quiz-topline">
+                    <span id="quizCounter">Pertanyaan 1 dari 10</span>
+                    <div class="quiz-score-chips">
+                        <strong class="quiz-chip" id="quizScoreLive">Skor: 0</strong>
+                        <strong class="quiz-chip quiz-chip--xp" id="quizXpLive">+0 EXP</strong>
+                    </div>
+                </div>
+                <div class="quiz-bar quiz-play-bar" aria-label="Progres ronde"><span id="quizProgressBar"></span></div>
                 <span class="quiz-topic" id="quizTopic">Pesan mencurigakan</span>
                 <h2 class="quiz-question" id="quizQuestion"></h2>
                 <div class="quiz-context" id="quizContext"></div>
@@ -60,13 +54,19 @@
                 <div class="quiz-feedback" id="quizFeedback" role="status"></div>
                 <div class="quiz-actions"><button class="quiz-btn primary" id="quizNext" type="button" disabled>Jawab dulu</button></div>
             </div>
+
+            {{-- Hasil --}}
             <div id="quizResult" class="quiz-hidden"></div>
         </section>
 
         <aside class="quiz-aside">
             <h3>Progress kamu</h3>
-            <p class="aside-intro">Latihan singkat untuk membangun kebiasaan aman saat menerima pesan digital.</p>
-            <div class="quiz-mini-stat"><div class="quiz-stat"><b id="quizCorrectCount">0</b><span>Jawaban benar</span></div><div class="quiz-stat"><b id="quizAnsweredCount">0/10</b><span>Soal dijawab</span></div></div>
+            <p class="quiz-intro">Latihan singkat untuk membangun kebiasaan aman saat menerima pesan digital.</p>
+            <div id="quizAsideLevel"></div>
+            <div class="quiz-mini-stat">
+                <div class="quiz-stat"><b id="quizCorrectCount">0</b><span>Benar ronde ini</span></div>
+                <div class="quiz-stat"><b id="quizAnsweredCount">0/10</b><span>Soal dijawab</span></div>
+            </div>
             <h3>Ingat 3 hal ini</h3>
             <div class="quiz-principles">
                 <div class="quiz-principle"><span class="quiz-principle-icon">⏸</span><span><strong>Jeda dulu</strong>Jangan terburu-buru karena ancaman atau hadiah.</span></div>
@@ -76,117 +76,22 @@
         </aside>
     </div>
 </main>
-
-<script>
-(() => {
-    const questionBank = [{"id": "1-01", "level": 1, "topic": "Permintaan OTP", "context": "Pesan mengaku dari dompet digital: akun akan dibekukan dalam 10 menit dan kamu diminta mengirim OTP.", "question": "Apa tindakan paling aman?", "choices": ["Kirim OTP agar akun aktif.", "Jangan bagikan OTP; cek akun melalui aplikasi resmi.", "Minta pengirim mengirim kode lain.", "Teruskan OTP ke teman."], "answer": 1, "explanation": "OTP bersifat rahasia. Ancaman dan tekanan waktu adalah tanda rekayasa sosial."}, {"id": "1-02", "level": 1, "topic": "Hadiah mendadak", "context": "Nomor asing mengabarkan kamu menang hadiah besar dan meminta PIN lewat tautan.", "question": "Apa yang paling mencurigakan?", "choices": ["Nominal hadiah besar dan permintaan PIN melalui tautan.", "Pesan memakai bahasa Indonesia.", "Pesan dikirim siang hari.", "Ada tanda seru."], "answer": 0, "explanation": "Hadiah tak terduga yang meminta PIN atau data keuangan sangat berisiko."}, {"id": "1-03", "level": 1, "topic": "Teman ganti nomor", "context": "Nomor baru memakai foto kakakmu dan meminta transfer segera.", "question": "Apa yang sebaiknya dilakukan?", "choices": ["Transfer sedikit dulu.", "Percaya karena fotonya cocok.", "Hubungi kakak lewat nomor lama atau cara lain yang dikenal.", "Minta OTP sebagai bukti."], "answer": 2, "explanation": "Foto profil dapat ditiru. Verifikasi lewat saluran berbeda sebelum mengirim uang."}, {"id": "1-04", "level": 1, "topic": "Tugas sekolah", "context": "Teman mengirim materi tugas yang memang sedang kamu kerjakan di grup kelas.", "question": "Apakah pasti penipuan?", "choices": ["Pasti, karena ada file.", "Tidak otomatis; cek pengirim dan pastikan file sesuai konteks.", "Pasti aman karena teman.", "Langsung bagikan ke semua orang."], "answer": 1, "explanation": "Konteks yang masuk akal bukan jaminan aman; tetap periksa pengirim dan file."}, {"id": "1-05", "level": 1, "topic": "Biaya lowongan", "context": "Tawaran kerja gaji tinggi meminta biaya administrasi hari ini agar posisi tidak hilang.", "question": "Langkah terbaik?", "choices": ["Bayar agar tidak terlambat.", "Percaya jika ada logo.", "Verifikasi perusahaan dan jangan membayar sebelum jelas.", "Kirim foto kartu identitas dulu."], "answer": 2, "explanation": "Biaya di muka dan tekanan waktu pada lowongan adalah indikator risiko."}, {"id": "1-06", "level": 1, "topic": "Paket datang", "context": "Kamu menunggu paket dan statusnya muncul di aplikasi belanja resmi dengan resi yang cocok.", "question": "Apa respons yang tepat?", "choices": ["Anggap semua notifikasi paket penipuan.", "Klik tautan acak.", "Berikan OTP ke kurir.", "Periksa di aplikasi resmi dan jangan bagikan OTP."], "answer": 3, "explanation": "Gunakan kanal resmi; kurir tidak membutuhkan OTP akun keuanganmu."}, {"id": "1-07", "level": 1, "topic": "Permintaan patungan", "context": "Teman sekelas meminta patungan konsumsi untuk rapat yang memang dijadwalkan.", "question": "Sebelum transfer, sebaiknya…", "choices": ["Langsung transfer.", "Konfirmasi jumlah dan tujuan melalui grup atau langsung.", "Tuduh teman menipu.", "Minta kata sandi."], "answer": 1, "explanation": "Permintaan bisa wajar, tetapi konfirmasi detail pembayaran terlebih dahulu."}, {"id": "1-08", "level": 1, "topic": "Pesan bank", "context": "Pesan berisi tautan pendek dan ancaman rekening ditutup hari ini.", "question": "Apa tindakan paling aman?", "choices": ["Isi formulir cepat.", "Balas dengan PIN.", "Buka aplikasi resmi atau hubungi nomor resmi bank.", "Kirim ke grup tanpa konteks."], "answer": 2, "explanation": "Ancaman dan tautan pendek perlu diverifikasi lewat kanal resmi."}, {"id": "1-09", "level": 1, "topic": "Kode verifikasi", "context": "Seseorang mengaku petugas dan meminta kode verifikasi yang baru masuk.", "question": "Apa yang perlu kamu lakukan?", "choices": ["Jangan bagikan kode kepada siapa pun.", "Kirim jika petugas terdengar sopan.", "Kirim setengah kode.", "Minta hadiah sebagai imbalan."], "answer": 0, "explanation": "Kode verifikasi hanya untukmu, bukan untuk petugas atau orang lain."}, {"id": "1-10", "level": 1, "topic": "Tautan undangan", "context": "Kamu menerima tautan undangan acara dari teman, tetapi tidak tahu acara apa itu.", "question": "Langkah pertama?", "choices": ["Klik segera.", "Masukkan password untuk melihat undangan.", "Tanyakan konteks kepada teman lewat kanal yang dikenal.", "Sebarkan ke kontak lain."], "answer": 2, "explanation": "Pastikan konteks dan pengirim sebelum membuka tautan yang tidak jelas."}, {"id": "1-11", "level": 1, "topic": "Paket biaya tambahan", "context": "Pesan meminta biaya kecil untuk melepas paket, tetapi nomor resi tidak cocok dengan pesananmu.", "question": "Apa yang sebaiknya dilakukan?", "choices": ["Bayar karena biayanya kecil.", "Periksa langsung melalui aplikasi atau layanan kurir resmi.", "Kirim nomor kartu.", "Abaikan ketidakcocokan resi."], "answer": 1, "explanation": "Ketidakcocokan resi dan permintaan pembayaran perlu diverifikasi."}, {"id": "1-12", "level": 1, "topic": "File tugas", "context": "Guru mengumumkan file materi di platform sekolah resmi yang biasa digunakan.", "question": "Sikap yang tepat?", "choices": ["Tetap cek bahwa platform dan file sesuai, lalu ikuti prosedur sekolah.", "File dari guru selalu pasti aman.", "Kirim kata sandi sekolah kepada pengirim.", "Nonaktifkan perlindungan perangkat."], "answer": 0, "explanation": "Sumber yang dikenal membantu, tetapi tetap pastikan kanal dan file sesuai."}, {"id": "2-01", "level": 2, "topic": "Domain mirip", "context": "Email transaksi memakai domain yang mirip situs resmi dan mendesak kamu login.", "question": "Apa langkah terbaik?", "choices": ["Login untuk membatalkan transaksi.", "Buka aplikasi atau ketik alamat resmi sendiri.", "Tes dengan password palsu.", "Teruskan tautan ke teman."], "answer": 1, "explanation": "Domain mirip dapat dipakai untuk phishing. Buka layanan melalui kanal resmi secara mandiri."}, {"id": "2-02", "level": 2, "topic": "Panitia acara", "context": "Orang yang mengaku panitia meminta nama dan email untuk sertifikat, tetapi kamu belum mengenalnya.", "question": "Apa yang tepat?", "choices": ["Kirim NIK dan password juga.", "Langsung tuduh penipu.", "Verifikasi identitas dan berikan data seperlunya.", "Berikan semua data pribadi."], "answer": 2, "explanation": "Verifikasi identitas dan minimalkan data yang dibagikan."}, {"id": "2-03", "level": 2, "topic": "Akun teman diretas", "context": "Teman mengirim pesan yang tidak biasa berisi tautan hadiah, disertai desakan untuk klik.", "question": "Bagaimana merespons?", "choices": ["Klik karena berasal dari teman.", "Buka tautan di perangkat lain.", "Konfirmasi ke teman lewat cara lain dan jangan klik dulu.", "Minta teman mengirim OTP."], "answer": 2, "explanation": "Akun yang dikenal bisa diambil alih. Konfirmasi melalui saluran lain."}, {"id": "2-04", "level": 2, "topic": "QR pembayaran", "context": "Stiker QR pembayaran di tempat umum tampak menutupi QR asli.", "question": "Apa yang sebaiknya dilakukan?", "choices": ["Pindai dan bayar cepat.", "Pastikan nama penerima di aplikasi cocok sebelum konfirmasi; tanyakan petugas bila ragu.", "Kirim PIN kepada penjaga.", "Anggap semua QR pasti aman."], "answer": 1, "explanation": "Periksa nama penerima dan keaslian kode sebelum menyelesaikan transaksi."}, {"id": "2-05", "level": 2, "topic": "Lowongan lewat pesan", "context": "Perekrut mengirim kontrak rapi, tetapi meminta transfer deposit sebelum wawancara.", "question": "Apa indikator utamanya?", "choices": ["Dokumen rapi berarti resmi.", "Permintaan deposit sebelum proses jelas adalah tanda bahaya.", "Transfer jika nominal kecil.", "Cukup cek foto profil."], "answer": 1, "explanation": "Dokumen bisa dipalsukan; biaya awal untuk memperoleh pekerjaan patut dicurigai."}, {"id": "2-06", "level": 2, "topic": "Permintaan rahasia", "context": "Pengirim meminta kamu merahasiakan transfer dari keluarga karena “proses internal”.", "question": "Apa maknanya?", "choices": ["Instruksi merahasiakan transaksi adalah tanda risiko; verifikasi independen.", "Itu selalu prosedur normal.", "Segera transfer agar rahasia.", "Hapus bukti percakapan."], "answer": 0, "explanation": "Tekanan untuk merahasiakan transaksi dapat mengisolasi korban dari bantuan."}, {"id": "2-07", "level": 2, "topic": "Dukungan teknis", "context": "Seseorang menelepon mengaku teknisi dan meminta aplikasi kendali jarak jauh dipasang.", "question": "Apa pilihan paling aman?", "choices": ["Pasang aplikasi agar cepat dibantu.", "Berikan kode akses.", "Tolak akses jarak jauh yang tidak diminta dan hubungi dukungan resmi sendiri.", "Bagikan layar aplikasi bank."], "answer": 2, "explanation": "Akses jarak jauh dapat memberi kendali pada penipu. Hubungi dukungan resmi melalui kanal yang dicari sendiri."}, {"id": "2-08", "level": 2, "topic": "Investasi cepat", "context": "Grup menjanjikan keuntungan pasti 30% seminggu dan meminta transfer ke rekening pribadi.", "question": "Apa yang perlu kamu simpulkan?", "choices": ["Keuntungan pasti tinggi dan rekening pribadi merupakan indikator kuat risiko.", "Pasti benar karena ada grup.", "Ikut dengan jumlah kecil tanpa cek.", "Pinjam uang agar peluang tidak hilang."], "answer": 0, "explanation": "Keuntungan tinggi yang dijamin dan tekanan untuk transfer adalah tanda bahaya."}, {"id": "2-09", "level": 2, "topic": "Permintaan data sekolah", "context": "Formulir mengatasnamakan sekolah meminta NIK, alamat, password email, dan OTP.", "question": "Apa tindakan terbaik?", "choices": ["Isi semua karena atas nama sekolah.", "Pastikan lewat guru/kanal resmi; jangan berikan password atau OTP.", "Kirim ke teman agar diisi juga.", "Gunakan password yang sama untuk semua akun."], "answer": 1, "explanation": "Permintaan data harus relevan. Password dan OTP tidak boleh diminta melalui formulir semacam itu."}, {"id": "2-10", "level": 2, "topic": "Panggilan video darurat", "context": "Akun keluarga menelepon video dengan gambar buram lalu meminta uang darurat.", "question": "Bagaimana memverifikasi?", "choices": ["Transfer sambil panggilan berlangsung.", "Tanyakan hal pribadi lalu langsung transfer.", "Hubungi anggota keluarga lewat nomor tersimpan dan konfirmasi dengan orang tepercaya.", "Kirim data rekening dulu."], "answer": 2, "explanation": "Suara atau video dapat ditiru/dimanipulasi; verifikasi lewat saluran independen."}, {"id": "2-11", "level": 2, "topic": "Notifikasi keamanan", "context": "Aplikasi resmi menampilkan peringatan login baru saat kamu memang baru masuk di perangkat lain.", "question": "Apa sikap yang tepat?", "choices": ["Periksa detail perangkat dan aktivitas di aplikasi resmi.", "Klik tautan dari pesan lain yang mengaku membantu.", "Kirim kode login ke teman.", "Abaikan semua peringatan keamanan."], "answer": 0, "explanation": "Konteks bisa menjelaskan peringatan, tetapi periksa detail melalui aplikasi resmi."}, {"id": "2-12", "level": 2, "topic": "Dokumen elektronik", "context": "Kamu menerima dokumen PDF dari pengirim tak dikenal dengan instruksi mengaktifkan makro atau memasang aplikasi.", "question": "Apa yang sebaiknya dilakukan?", "choices": ["Ikuti instruksi agar dokumen terbuka.", "Jangan jalankan aplikasi/makro; verifikasi pengirim dan pindai file.", "Matikan antivirus.", "Kirim dokumen ke semua kontak."], "answer": 1, "explanation": "Instruksi menjalankan kode dari dokumen tak dikenal berisiko."}, {"id": "3-01", "level": 3, "topic": "Pemalsuan identitas", "context": "Pesan dari “atasan” meminta pembelian voucher rahasia. Gaya bahasa mirip, tetapi nomor baru dan harus segera.", "question": "Apa tindakan paling tepat?", "choices": ["Beli voucher agar terlihat sigap.", "Verifikasi melalui nomor atau kanal kerja yang sudah tercatat.", "Balas dengan kode OTP.", "Percaya karena gaya bahasa mirip."], "answer": 1, "explanation": "Penipu dapat meniru gaya bahasa. Gunakan prosedur verifikasi yang independen."}, {"id": "3-02", "level": 3, "topic": "Tautan subdomain", "context": "Alamat terlihat seperti bank.contoh-login.site, bukan domain resmi bank.", "question": "Apa yang perlu diperiksa?", "choices": ["Kata “bank” di awal berarti resmi.", "Cukup lihat ikon gembok.", "Domain utama yang terdaftar adalah bagian akhir sebelum ekstensi; jangan login dan buka kanal resmi.", "Masukkan data palsu untuk mengetes."], "answer": 2, "explanation": "Nama brand pada subdomain tidak membuktikan kepemilikan. HTTPS juga bukan jaminan situs tepercaya."}, {"id": "3-03", "level": 3, "topic": "Investasi komunitas", "context": "Testimoni grup menunjukkan keuntungan, admin melarang bertanya di luar grup, dan penarikan perlu biaya tambahan.", "question": "Apa analisis terbaik?", "choices": ["Testimoni cukup sebagai bukti.", "Larangan verifikasi dan biaya penarikan tambahan merupakan pola risiko; jangan tambah dana.", "Bayar biaya supaya modal kembali.", "Ajak teman ikut agar bisa patungan."], "answer": 1, "explanation": "Testimoni bisa direkayasa. Biaya tambahan untuk mencairkan keuntungan sering menjadi pola penipuan."}, {"id": "3-04", "level": 3, "topic": "Akun diambil alih", "context": "Teman mengaku kehilangan akses lalu meminta kode pemulihan yang masuk ke ponselmu.", "question": "Apa yang seharusnya dilakukan?", "choices": ["Kirim kode karena ingin membantu.", "Kirim screenshot kode.", "Jangan berikan kode pemulihan; hubungi teman lewat saluran lain.", "Ubah password akun teman."], "answer": 2, "explanation": "Kode pemulihan memberi akses akun dan tidak boleh dibagikan kepada orang lain."}, {"id": "3-05", "level": 3, "topic": "Penyamaran layanan", "context": "Pengirim menyebut beberapa data transaksi yang benar lalu meminta PIN untuk “membatalkan” transaksi.", "question": "Apakah detail yang benar membuktikan pengirim resmi?", "choices": ["Ya, hanya petugas resmi tahu detail itu.", "Tidak; data bisa bocor. Jangan berikan PIN dan hubungi layanan resmi sendiri.", "Berikan PIN jika detail lainnya benar.", "Minta mereka mengirim tautan login."], "answer": 1, "explanation": "Informasi yang benar bisa diperoleh dari kebocoran atau rekayasa. PIN tetap rahasia."}, {"id": "3-06", "level": 3, "topic": "File invoice", "context": "Invoice bernama `tagihan.pdf.exe` dikirim sebagai PDF dan diminta segera dibuka.", "question": "Apa yang patut dicurigai?", "choices": ["Ikon PDF berarti aman.", "Nama file dan ekstensi ganda; jangan jalankan, konfirmasi pengirim dan pindai.", "Buka di komputer kantor.", "Ubah nama file menjadi PDF."], "answer": 1, "explanation": "Ekstensi akhir .exe berarti file executable, meski namanya memuat .pdf."}, {"id": "3-07", "level": 3, "topic": "Permintaan bantuan publik", "context": "Akun donasi memakai foto korban bencana, rekening pribadi, dan tidak mencantumkan organisasi atau laporan.", "question": "Bagaimana bertindak?", "choices": ["Donasi segera karena fotonya menyentuh.", "Sebarkan supaya viral.", "Verifikasi organisasi, kanal donasi, dan laporan melalui sumber independen sebelum berdonasi.", "Minta penerima mengirim OTP."], "answer": 2, "explanation": "Cerita emosional dapat disalahgunakan. Periksa legalitas dan kanal donasi independen."}, {"id": "3-08", "level": 3, "topic": "Panggilan bank palsu", "context": "Penelepon meminta kamu menekan angka tertentu lalu membacakan kode OTP untuk mencegah transaksi.", "question": "Apa yang tepat?", "choices": ["Ikuti instruksi karena penelepon tahu nama.", "Jangan berikan kode; tutup telepon dan hubungi bank lewat nomor resmi.", "Berikan kode hanya sebagian.", "Minta mereka mengirim SMS."], "answer": 1, "explanation": "Petugas tidak membutuhkan OTP untuk dibacakan. Putuskan panggilan dan hubungi bank sendiri."}, {"id": "3-09", "level": 3, "topic": "Tautan dengan HTTPS", "context": "Sebuah situs memakai HTTPS dan logo resmi, tetapi menjanjikan bantuan pemerintah dengan biaya aktivasi lewat transfer pribadi.", "question": "Apa kesimpulan yang benar?", "choices": ["HTTPS berarti situs pasti asli.", "Logo resmi memastikan legal.", "HTTPS hanya mengenkripsi koneksi; verifikasi domain dan program lewat kanal pemerintah resmi.", "Bayar dulu untuk menguji."], "answer": 2, "explanation": "HTTPS tidak membuktikan identitas atau kejujuran situs."}, {"id": "3-10", "level": 3, "topic": "Pemalsuan suara", "context": "Kamu menerima pesan suara mirip suara teman yang meminta uang dan melarang menghubungi orang lain.", "question": "Apa langkah terbaik?", "choices": ["Transfer karena suaranya mirip.", "Verifikasi dengan menelepon nomor yang tersimpan atau pertanyaan melalui kanal lain.", "Ikuti instruksi merahasiakan.", "Kirim nomor kartu."], "answer": 1, "explanation": "Suara dapat ditiru. Permintaan mendesak dan larangan verifikasi menambah risiko."}, {"id": "3-11", "level": 3, "topic": "Pengembalian dana", "context": "Seseorang mengaku akan mengembalikan uang, tetapi meminta kamu memasukkan PIN dan kode OTP di halaman yang dikirimnya.", "question": "Apa yang harus dilakukan?", "choices": ["Isi agar refund diproses.", "Jangan masukkan PIN/OTP; cek transaksi lewat aplikasi resmi.", "Berikan kode jika nominal refund kecil.", "Kirim foto kartu."], "answer": 1, "explanation": "Pengembalian dana tidak membutuhkan PIN atau OTP rahasia melalui tautan pengirim."}, {"id": "3-12", "level": 3, "topic": "Pemberitahuan pajak", "context": "Email menyebut denda pajak akan bertambah dalam satu jam dan meminta unduh lampiran ZIP untuk melihat surat.", "question": "Apa respons yang paling aman?", "choices": ["Unduh dan jalankan semua isi ZIP.", "Balas dengan data identitas lengkap.", "Jangan buka lampiran mencurigakan; cek kewajiban melalui situs/kanal resmi instansi.", "Teruskan ke kantor tanpa konteks."], "answer": 2, "explanation": "Ancaman, tenggat ekstrem, dan lampiran tak terduga patut dicurigai. Verifikasi lewat kanal resmi."}];
-    const $ = id => document.getElementById(id);
-    const letters = ['A','B','C','D'];
-    const LEVELS = [
-        {id:1,name:'Pemula',icon:'🌱',description:'Kenali tanda dasar pesan mencurigakan.',minimum:0},
-        {id:2,name:'Menengah',icon:'🧭',description:'Nilai konteks, identitas, dan cara verifikasi.',minimum:70},
-        {id:3,name:'Mahir',icon:'🛡️',description:'Hadapi modus yang lebih rumit dan manipulatif.',minimum:70}
-    ];
-    const questionCount = 10;
-    let level = 1, questions = [], index = 0, score = 0, answered = false, saving = false;
-    let progress = {1:null,2:null,3:null};
-    const responses = [];
-    const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
-    const apiSave = @json(route('jeda.api.quiz-attempt'));
-    const apiProgress = @json(route('jeda.api.quiz-progress'));
-
-    function seededShuffle(items, seedText) {
-        let seed = 2166136261;
-        for (let i=0; i<seedText.length; i++) { seed ^= seedText.charCodeAt(i); seed = Math.imul(seed, 16777619); }
-        function random() { seed += 0x6D2B79F5; let t=seed; t=Math.imul(t ^ t>>>15,t|1); t^=t+Math.imul(t ^ t>>>7,t|61); return ((t ^ t>>>14)>>>0)/4294967296; }
-        const out = [...items];
-        for (let i=out.length-1; i>0; i--) { const j=Math.floor(random()*(i+1)); [out[i],out[j]]=[out[j],out[i]]; }
-        return out;
-    }
-    function todayKey() { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
-    function loadProgress() {
-        fetch(apiProgress, {headers:{'Accept':'application/json'}})
-            .then(r=>{if(!r.ok) throw new Error('Gagal memuat progres'); return r.json();})
-            .then(data=>{progress=data.levels || progress; renderLevels(); $('quizProgressStatus').textContent='Progres tersimpan otomatis di sesi browser ini. Soal harian akan berganti setiap tanggal.';})
-            .catch(()=>{renderLevels(); $('quizProgressStatus').textContent='Progres belum dapat dimuat dari server. Pastikan migrasi database sudah dijalankan.';});
-    }
-    function renderLevels() {
-        const container=$('quizLevels'); container.innerHTML='';
-        LEVELS.forEach(item=>{
-            const prev=progress[item.id-1];
-            const unlocked=item.id===1 || (prev && Number(prev.best_score)>=70);
-            const own=progress[item.id];
-            const btn=document.createElement('button'); btn.type='button'; btn.className='quiz-level-card'; btn.disabled=!unlocked;
-            const icon=document.createElement('div'); icon.className='level-icon'; icon.textContent=item.icon;
-            const title=document.createElement('strong'); title.textContent=`Level ${item.id} · ${item.name}`;
-            const desc=document.createElement('span'); desc.textContent=item.description;
-            const status=document.createElement('span'); status.className='level-status';
-            status.textContent=!unlocked?'🔒 Selesaikan level sebelumnya':own?`✓ Nilai terbaik: ${own.best_score}%`:'▶ Mulai latihan';
-            btn.append(icon,title,desc,status);
-            btn.addEventListener('click',()=>startLevel(item.id)); container.appendChild(btn);
-        });
-    }
-    function startLevel(id) {
-        level=id; index=0; score=0; answered=false; saving=false; responses.length=0;
-        const daily=seededShuffle(questionBank.filter(q=>q.level===id), `${todayKey()}-level-${id}`);
-        questions=daily.slice(0,questionCount);
-        // Shuffle answer order as well, keeping the correct answer attached to its choice.
-        questions=questions.map(q=>{const options=q.choices.map((text,i)=>({text,correct:i===q.answer})); const shuffled=seededShuffle(options,`${todayKey()}-${q.id}-answers`); return {...q,choices:shuffled.map(x=>x.text),answer:shuffled.findIndex(x=>x.correct)};});
-        $('quizLevelSelect').classList.add('quiz-hidden'); $('quizResult').classList.add('quiz-hidden'); $('quizPlay').classList.remove('quiz-hidden');
-        $('quizLevelName').textContent=`Level ${id} · ${LEVELS[id-1].name}`; renderQuestion();
-    }
-    function renderQuestion() {
-        answered=false; const q=questions[index];
-        $('quizCounter').textContent=`Pertanyaan ${index+1} dari ${questions.length}`;
-        $('quizScoreLive').textContent=`Skor: ${score}`;
-        $('quizProgressBar').style.width=`${index/questions.length*100}%`;
-        $('quizTopic').textContent=q.topic; $('quizQuestion').textContent=q.question; $('quizContext').textContent=q.context;
-        $('quizChoices').innerHTML=''; $('quizFeedback').className='quiz-feedback'; $('quizFeedback').textContent='';
-        $('quizNext').disabled=true; $('quizNext').textContent='Pilih jawaban';
-        q.choices.forEach((choice,i)=>{const button=document.createElement('button');button.type='button';button.className='quiz-choice';const letter=document.createElement('span');letter.className='quiz-letter';letter.textContent=letters[i];const copy=document.createElement('span');copy.textContent=choice;button.append(letter,copy);button.addEventListener('click',()=>chooseAnswer(i));$('quizChoices').appendChild(button);});
-        $('quizAnsweredCount').textContent=`${index}/${questions.length}`; $('quizCorrectCount').textContent=score;
-    }
-    function chooseAnswer(choiceIndex) {
-        if(answered)return; answered=true; const q=questions[index]; const isCorrect=choiceIndex===q.answer; if(isCorrect)score++;
-        responses.push({question_id:q.id,selected:choiceIndex,correct:isCorrect,answer:q.answer,topic:q.topic});
-        [...$('quizChoices').children].forEach((button,i)=>{button.disabled=true;if(i===q.answer)button.classList.add('correct');else if(i===choiceIndex)button.classList.add('wrong');});
-        const feedback=$('quizFeedback');feedback.className=`quiz-feedback show ${isCorrect?'good':'review'}`;
-        const title=document.createElement('strong');title.textContent=isCorrect?'✓ Tepat! Kamu membaca situasinya dengan baik.':'↻ Belum tepat—ini kesempatan untuk belajar.';
-        const explanation=document.createElement('div');explanation.textContent=q.explanation;feedback.append(title,explanation);
-        $('quizScoreLive').textContent=`Skor: ${score}`;$('quizCorrectCount').textContent=score;$('quizAnsweredCount').textContent=`${index+1}/${questions.length}`;$('quizProgressBar').style.width=`${(index+1)/questions.length*100}%`;
-        $('quizNext').disabled=false;$('quizNext').textContent=index===questions.length-1?'Simpan & lihat hasil':'Soal berikutnya →';
-    }
-    async function finishQuiz() {
-        if(saving)return; saving=true; $('quizNext').disabled=true; $('quizNext').textContent='Menyimpan hasil…';
-        const percent=Math.round(score/questions.length*100); let saveMessage='';
-        try {
-            const response=await fetch(apiSave,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':csrf},body:JSON.stringify({level,score,total_questions:questions.length,correct_count:score,quiz_date:todayKey(),answers:responses})});
-            const data=await response.json(); if(!response.ok)throw new Error(data.message||'Hasil belum tersimpan.');
-            progress=data.levels||progress; saveMessage='Hasil berhasil disimpan.';
-        } catch(error) { saveMessage='Nilai tampil, tetapi belum tersimpan ke database. Coba muat ulang setelah koneksi database diperiksa.'; }
-        $('quizPlay').classList.add('quiz-hidden');$('quizResult').classList.remove('quiz-hidden');
-        let heading,message;
-        if(score>=9){heading='Kamu teliti membaca tanda!';message='Kamu sudah cukup baik membedakan pesan berisiko dan pesan yang mungkin wajar.';}
-        else if(score>=7){heading='Level berhasil diselesaikan!';message='Kamu memenuhi target level. Pelajari kembali soal yang keliru sebelum lanjut.';}
-        else if(score>=5){heading='Kamu mulai mengenali polanya.';message='Terus berlatih mengenali konteks, memeriksa identitas, dan menghindari tekanan waktu.';}
-        else{heading='Ayo latih kewaspadaan pelan-pelan.';message='Tidak apa-apa—tujuan latihan ini memang belajar. Baca pembahasan dan coba lagi.';}
-        const result=$('quizResult');result.innerHTML='';const wrap=document.createElement('div');wrap.className='quiz-result';
-        const badge=document.createElement('div');badge.className='quiz-eyebrow';badge.textContent=`✦ Level ${level} selesai`;
-        const title=document.createElement('h2');title.textContent=heading;const scoreEl=document.createElement('div');scoreEl.className='quiz-result-score';scoreEl.textContent=`${score}/${questions.length}`;
-        const desc=document.createElement('p');desc.textContent=message;
-        const grid=document.createElement('div');grid.className='quiz-result-grid';
-        [[`${score}`,'Jawaban benar'],[`${questions.length-score}`,'Perlu dipelajari'],[`${percent}%`,'Nilai latihan']].forEach(([n,l])=>{const stat=document.createElement('div');stat.className='quiz-stat';const b=document.createElement('b');b.textContent=n;const sp=document.createElement('span');sp.textContent=l;stat.append(b,sp);grid.appendChild(stat);});
-        const save=document.createElement('p');save.className='quiz-save-status';save.textContent=saveMessage;
-        const review=document.createElement('div');review.className='quiz-review';const rt=document.createElement('h3');rt.textContent='Pembahasan semua soal';review.appendChild(rt);
-        responses.forEach((r,i)=>{const q=questions[i];const item=document.createElement('div');item.className='quiz-review-item';const b=document.createElement('b');b.textContent=`${i+1}. ${r.correct?'✓ Benar':'↻ Pelajari lagi'} — ${q.topic}`;const sm=document.createElement('small');sm.textContent=`Jawaban yang tepat: ${letters[q.answer]}. ${q.choices[q.answer]} ${q.explanation}`;item.append(b,sm);review.appendChild(item);});
-        const actions=document.createElement('div');actions.className='quiz-actions';const retry=document.createElement('button');retry.type='button';retry.className='quiz-btn primary';retry.textContent='Ulangi level ini';retry.addEventListener('click',()=>startLevel(level));
-        const levels=document.createElement('button');levels.type='button';levels.className='quiz-btn';levels.textContent='Pilih level';levels.addEventListener('click',()=>{saving=false;$('quizResult').classList.add('quiz-hidden');$('quizLevelSelect').classList.remove('quiz-hidden');renderLevels();loadProgress();});
-        actions.append(retry,levels);wrap.append(badge,title,scoreEl,desc,grid,save,review,actions);result.appendChild(wrap);$('quizProgressBar').style.width='100%';
-        loadProgress();
-    }
-    $('quizNext').addEventListener('click',()=>{if(!answered)return;if(index<questions.length-1){index++;renderQuestion();}else finishQuiz();});
-    $('quizBackToLevels').addEventListener('click',()=>{$('quizPlay').classList.add('quiz-hidden');$('quizLevelSelect').classList.remove('quiz-hidden');loadProgress();});
-    loadProgress();
-})();
-</script>
 @endsection
+
+@push('scripts')
+    <script>
+        window.JEDA_QUIZ_CONFIG = {
+            questionsPerRound: @json(config('jeda_quiz.questions_per_round')),
+            xpBase: @json(config('jeda_quiz.xp_per_correct_base')),
+            xpStep: @json(config('jeda_quiz.xp_per_correct_step')),
+            perfectBonus: @json(config('jeda_quiz.perfect_bonus')),
+            levels: @json(collect(config('jeda_quiz.levels'))->map(fn ($level, $id) => ['id' => $id] + $level)->values()),
+            routes: {
+                save: @json(route('jeda.api.quiz-attempt')),
+                progress: @json(route('jeda.api.quiz-progress')),
+            },
+        };
+    </script>
+    <script src="{{ asset('js/latihan-data.js') }}"></script>
+    <script src="{{ asset('js/latihan.js') }}"></script>
+@endpush

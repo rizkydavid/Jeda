@@ -18,7 +18,6 @@ Route::view('/cek', 'pages.cek')->name('cek');
 Route::view('/latihan', 'pages.simulasi')->name('simulasi');
 Route::view('/jam-emas', 'pages.jam-emas')->name('jam-emas');
 Route::view('/keluarga', 'pages.keluarga')->name('keluarga');
-Route::view('/kartu', 'pages.kartu')->name('kartu');
 Route::view('/batasan', 'pages.batasan')->name('batasan');
 
 /*
@@ -43,7 +42,7 @@ Route::prefix('jeda/api')->name('jeda.api.')->group(function () {
     Route::controller(LatihanController::class)->group(function () {
         Route::post('simulasi', 'saveSimulation')->name('simulation');
         Route::get('quiz-progress', 'quizProgress')->name('quiz-progress');
-        Route::post('quiz-attempt', 'saveQuizAttempt')->name('quiz-attempt');
+        Route::post('quiz-attempt', 'saveQuizAttempt')->middleware('throttle:30,1')->name('quiz-attempt');
     });
 
     // Dipakai lintas modul (checklist Jam Emas/Keluarga/Kartu, aksi bantuan, ringkasan).
