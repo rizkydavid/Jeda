@@ -2,48 +2,39 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Support\QuizProgression;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
     protected $fillable = [
         'name',
         'email',
         'password',
+        'exp',
+        'level',
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
+     * Status level pengguna dari EXP-nya. Aturan level ada di config/jeda_quiz.php
+     * (satu sumber yang sama dengan halaman Latihan).
      */
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
-
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
+    public function getLevelDataInfo(): array
     {
+        $summary = QuizProgression::fromConfig()->summary((int) ($this->exp ?? 0));
+        $title = config("jeda_quiz.levels.{$summary['level']}.name");
+
         return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'level'            => $summary['level'],
+            'title'            => $title,
+            'exp'              => $summary['xp'],
+            'min_exp'          => $summary['level_start'],
+            'max_exp'          => $summary['next_level_xp'],
+            'progress_percent' => $summary['percent'],
+            'exp_to_next'      => $summary['xp_needed'],
         ];
     }
 }

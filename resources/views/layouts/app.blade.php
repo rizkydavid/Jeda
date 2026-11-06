@@ -15,6 +15,10 @@
         })();
     </script>
     <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+    @if (request()->routeIs('simulasi'))
+        <link rel="stylesheet" href="{{ asset('css/latihan.css') }}">
+    @endif
+    @stack('styles')
 </head>
 <body>
     <div class="intro-loader" id="introLoader" aria-label="Memuat Jeda" role="status">
@@ -271,5 +275,6 @@
     </script>
 
     <script src="{{ asset('js/jeda-backend.js') }}" defer></script>
+    @stack('scripts')
 </body>
 </html>

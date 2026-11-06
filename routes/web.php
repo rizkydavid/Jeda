@@ -37,7 +37,7 @@ Route::prefix('jeda/api')->name('jeda.api.')->group(function () {
     Route::controller(LatihanController::class)->group(function () {
         Route::post('simulasi', 'saveSimulation')->name('simulation');
         Route::get('quiz-progress', 'quizProgress')->name('quiz-progress');
-        Route::post('quiz-attempt', 'saveQuizAttempt')->name('quiz-attempt');
+        Route::post('quiz-attempt', 'saveQuizAttempt')->middleware('throttle:30,1')->name('quiz-attempt');
     });
 
     // Dipakai lintas modul (checklist Jam Emas/Keluarga/Kartu, aksi bantuan, ringkasan).
