@@ -1,0 +1,164 @@
+/*
+ * Navigasi mobile Jeda: menu jadi sidebar (drawer) dengan tombol hamburger.
+ * File ini dimuat setelah style.css dan hanya aktif di layar <= 900px.
+ * Logo tidak disentuh.
+ */
+
+/* Elemen khusus mobile disembunyikan di desktop. */
+.nav-toggle,
+.nav-backdrop,
+.nav-drawer-head { display: none; }
+
+@media (max-width: 900px) {
+
+  /* Animasi masuk .site-shell meninggalkan transform yang membuat position:fixed
+     tidak menempel ke layar. Setelah animasi selesai, transform harus hilang. */
+  .site-shell.is-ready {
+    opacity: 1;
+    transform: none;
+    animation: shell-arrive .9s cubic-bezier(.2, .75, .25, 1) backwards;
+  }
+
+  /* Bar atas: logo di kiri, tombol mode gelap dan hamburger di kanan, satu baris. */
+  .site-header .header-inner {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 10px !important;
+  }
+
+  .theme-toggle {
+    flex: none;
+    width: 42px;
+    height: 42px;
+    min-height: 42px;
+    padding: 0;
+    margin-left: auto !important;
+  }
+  .theme-toggle__label { display: none !important; }
+
+  .nav-toggle {
+    display: inline-flex;
+    flex: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    border: 1px solid var(--toggle-border);
+    border-radius: 999px;
+    background: var(--toggle-bg);
+    color: var(--ink);
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(15, 27, 45, .04);
+  }
+  .nav-toggle:focus-visible,
+  .nav-close:focus-visible { outline: 3px solid rgba(82, 104, 243, .45); outline-offset: 3px; }
+  .nav-toggle__bar {
+    display: block;
+    width: 18px;
+    height: 2px;
+    border-radius: 2px;
+    background: currentColor;
+    transition: transform .25s ease, opacity .2s ease;
+  }
+  .nav-toggle[aria-expanded="true"] .nav-toggle__bar:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+  .nav-toggle[aria-expanded="true"] .nav-toggle__bar:nth-child(2) { opacity: 0; }
+  .nav-toggle[aria-expanded="true"] .nav-toggle__bar:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+  /* Menu menjadi sidebar dari kanan. */
+  .site-nav {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9500;
+    display: flex !important;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 6px;
+    width: min(320px, 86vw);
+    height: 100vh;
+    height: 100dvh;
+    padding: 18px 16px 28px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background: var(--card);
+    border-left: 1px solid var(--line);
+    box-shadow: -18px 0 48px rgba(15, 27, 45, .18);
+    transform: translateX(105%);
+    visibility: hidden;
+    transition: transform .28s ease, visibility 0s linear .28s;
+  }
+  .site-nav.is-open {
+    transform: none;
+    visibility: visible;
+    transition: transform .28s ease;
+  }
+
+  .nav-drawer-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0 0 8px;
+    padding: 2px 6px 14px;
+    border-bottom: 1px solid var(--line);
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--ink);
+  }
+  .nav-close {
+    display: inline-grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ink);
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .site-nav a {
+    display: block;
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 14px;
+    font-size: 16px;
+  }
+  .site-nav a::after { display: none !important; }
+  .site-nav a:hover { transform: none; }
+  .site-nav a.pill {
+    margin-top: 10px;
+    text-align: center;
+    font-size: 15px;
+  }
+
+  .nav-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 9400;
+    background: rgba(5, 10, 25, .5);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .25s ease;
+  }
+  .nav-backdrop.is-open { opacity: 1; pointer-events: auto; }
+
+  html.nav-open,
+  html.nav-open body { overflow: hidden; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-nav,
+  .nav-backdrop,
+  .nav-toggle__bar { transition-duration: .01ms !important; }
+}
