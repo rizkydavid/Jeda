@@ -28,6 +28,15 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    // Pemeriksaan tautan (Tahap 1). Key hanya dibaca di server dari .env.
+    'safe_browsing' => [
+        'key' => env('SAFE_BROWSING_API_KEY'),
+    ],
+
+    'virustotal' => [
+        'key' => env('VIRUSTOTAL_API_KEY'),
+    ],
+
     // Analisis AI di halaman Bedah (opsional). Isi salah satu key di .env.
     // JEDA_AI_PROVIDER=gemini|anthropic bersifat opsional; kalau kosong dipakai yang key-nya terisi.
     'jeda_ai' => [

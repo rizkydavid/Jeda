@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\BedahController;
-use App\Http\Controllers\CekController;
+use App\Http\Controllers\FileCheckController;
+use App\Http\Controllers\LinkCheckController;
+use App\Http\Controllers\LinkExplanationController;
 use App\Http\Controllers\LatihanController;
 use App\Http\Controllers\ProgresController;
 use Illuminate\Support\Facades\Route;
@@ -30,10 +32,13 @@ Route::prefix('jeda/api')->name('jeda.api.')->group(function () {
         Route::post('bedah-ai', 'analyzeMessageWithAi')->middleware('throttle:10,1')->name('bedah-ai');
     });
 
-    Route::controller(CekController::class)->group(function () {
-        Route::post('cek-tautan', 'checkLink')->name('check-link');
-        Route::post('cek-file', 'checkFile')->name('check-file');
-    });
+    // Cek tautan membuka tautan dan memakai API berkuota, jadi dibatasi per IP.
+    Route::post('cek-tautan', [LinkCheckController::class, 'check'])->middleware('throttle:jeda-cek')->name('check-link');
+    // Penjelasan AI bersifat terpisah dari hasil utama: kalau Gemini gagal, hasil pemeriksaan tidak terpengaruh.
+    Route::post('cek-tautan/penjelasan', [LinkExplanationController::class, 'explain'])->middleware('throttle:jeda-ai')->name('explain-link');
+
+    // Cek file: isi file tidak diunggah. Hanya ringkasan dan SHA-256 yang dikirim; berbagi kuota VirusTotal dengan cek tautan.
+    Route::post('cek-file', [FileCheckController::class, 'check'])->middleware('throttle:jeda-cek')->name('check-file');
 
     Route::controller(LatihanController::class)->group(function () {
         Route::post('simulasi', 'saveSimulation')->name('simulation');

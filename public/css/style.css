@@ -1452,3 +1452,31 @@ html, body, .site-header, .page-content, .card, .notice, .q, .check, .opt, .sw, 
     .site-header .logo .jeda-mark { width: 38px !important; height: 38px !important; flex-basis: 38px !important; }
     .site-header .logo .logo-word { font-size: 24px; }
 }
+/* ---- Cek tautan: hasil pemeriksaan ---- */
+.tag.t-soft { background: var(--soft); }
+:root[data-theme="dark"] .tag.t-soft { background: #c9d3f0; }
+.cek-result { display: grid; gap: 12px; }
+.cek-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.cek-head .tag { font-size: 14px; }
+.cek-score { font-size: 14px; font-weight: 600; color: var(--mut); }
+.cek-notice { margin: 0; padding: 12px 14px; border-radius: 12px; background: var(--soft); font-size: 14px; }
+.cek-signals { list-style: none; margin: 0; padding: 0; }
+.cek-signals li { display: flex; gap: 12px; justify-content: space-between; align-items: flex-start; padding: 12px 0; border-top: 1px solid var(--line); }
+.cek-signals li:first-child { border-top: 0; }
+.cek-signals b { display: block; margin-bottom: 2px; }
+.cek-points { flex: none; font-size: 13px; font-weight: 700; color: var(--mut); }
+.cek-sources { list-style: none; margin: 0; padding: 12px 0 0; border-top: 1px solid var(--line); font-size: 13px; color: var(--mut); }
+.cek-sources li { padding: 4px 0; }
+
+/* ---- Cek tautan: penjelasan AI ---- */
+.cek-ai { display: grid; gap: 10px; padding-top: 12px; border-top: 1px solid var(--line); }
+.cek-ai h3 { margin: 6px 0 0; font-size: 15px; }
+.cek-steps { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+
+/* ---- Cek file ---- */
+.cek-drop { display: grid; gap: 4px; justify-items: center; text-align: center; padding: 22px; border: 2px dashed var(--line); border-radius: 16px; background: var(--soft); cursor: pointer; }
+.cek-drop:hover, .cek-drop:focus-visible, .cek-drop.is-over { border-color: #5368f2; outline: none; }
+.cek-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.cek-facts { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 13px; }
+.cek-facts dt { color: var(--mut); }
+.cek-facts dd { margin: 0; word-break: break-all; }

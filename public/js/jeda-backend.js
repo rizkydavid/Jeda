@@ -34,26 +34,9 @@
 
   // Bedah pesan: logika dan pencatatan progres ada di public/js/bedah.js (hanya dimuat di halaman Bedah).
 
-  // Pemeriksaan tautan: server hanya menyimpan hostname, bukan URL penuh.
-  const linkInput = $('input[aria-label="URL"]');
-  const linkButton = $$('button').find(b => /periksa tautan/i.test(text(b)));
-  linkButton?.addEventListener('click', async () => {
-    const value = linkInput?.value.trim();
-    if (!value) return;
-    const result = await post('/jeda/api/cek-tautan', {url:value}, true);
-    if (result?.ok) status(`Hasil tautan tersimpan · ${result.level}`);
-  });
+  // Pemeriksaan tautan dipindah ke public/js/cek.js (hanya dimuat di halaman /cek).
 
-  // Pemeriksaan nama file: file tidak diunggah atau dibuka.
-  document.addEventListener('click', async event => {
-    const button = event.target.closest('button');
-    if (!button || !/periksa nama file/i.test(text(button))) return;
-    const input = $('#fileNameCheck');
-    const filename = input?.value.trim();
-    if (!filename) return;
-    const result = await post('/jeda/api/cek-file', {filename}, true);
-    if (result?.ok) status('Ringkasan pemeriksaan file tersimpan.');
-  });
+  // Pemeriksaan file dipindah ke public/js/file-inspect.js dan cek.js (hanya dimuat di halaman /cek).
 
   // Pilihan kondisi Jam Emas disimpan di session browser.
   const situationChips = $$('.chip');

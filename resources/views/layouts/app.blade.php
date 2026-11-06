@@ -210,19 +210,7 @@
 
       // Bedah pesan: logika ada di public/js/bedah.js (hanya dimuat di halaman Bedah).
 
-      // Link checker: parse URL locally and show its actual hostname.
-      const linkInput=$('input[aria-label="URL"]');
-      const linkButton=$$('.btn').find(b=>/periksa tautan/i.test(textOf(b)));
-      linkButton?.addEventListener('click',()=>{
-        const raw=linkInput?.value.trim()||''; let parsed;
-        try{parsed=new URL(/^https?:\/\//i.test(raw)?raw:'https://'+raw);}catch(_){toast('Format tautan belum valid. Periksa kembali alamatnya.');linkInput?.focus();return;}
-        const host=parsed.hostname.toLowerCase(); const parts=host.split('.');
-        const suspicious=/(login|verify|verifikasi|secure| hadiah|hadiah|claim|gift|bonus|bank)/i.test(host);
-        const message=suspicious?'Alamat memuat kata yang sering dipakai untuk memancing perhatian. Verifikasi lewat aplikasi/situs resmi.':'Alamat berhasil dibaca. Ini bukan jaminan situs aman; periksa ejaan domain dan sumber pengirim.';
-        let box=$('#linkCheckFeedback'); if(!box){box=document.createElement('div');box.id='linkCheckFeedback';box.className='notice';linkButton.closest('.hero')?.appendChild(box);}
-        box.innerHTML=`<strong>Domain yang dibaca: ${host}</strong><br>${message}`;
-        toast('Tautan diperiksa di perangkat ini.');
-      });
+      // Cek tautan dipindah ke public/js/cek.js (halaman /cek).
       // Add filename checker to the file card, never upload/open the file.
       const fileCard=$$('.grid2 .card').find(c=>/penguji file/i.test(textOf(c)));
       if(fileCard && !$('#fileNameCheck')){
