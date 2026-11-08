@@ -26,5 +26,8 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('jeda-cek', fn (Request $request) => Limit::perMinute(10)->by($request->ip()));
         // Penjelasan AI memakai kuota Gemini, jadi dibatasi lebih ketat.
         RateLimiter::for('jeda-ai', fn (Request $request) => Limit::perMinute(5)->by($request->ip()));
+        if (app()->environment('production')) {
+    \Illuminate\Support\Facades\URL::forceScheme('https');
+}
     }
 }
