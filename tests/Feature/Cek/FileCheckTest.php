@@ -198,4 +198,75 @@ class FileCheckTest extends CekTestCase
         $this->assertStringNotContainsString('Rahasia', $dump);
         $this->assertStringNotContainsString(self::HASH, $dump);
     }
+
+    // ---------------------------------------------------------------- APK: izin + ringkasan
+
+    private const A = 'android.permission.';
+
+    public function test_apk_undangan_yang_meminta_sms_dan_aksesibilitas_tinggi_dengan_ringkasan(): void
+    {
+        $this->fakeServices(['www.virustotal.com/api/v3/files/*' => Http::response([], 404)]);
+
+        $response = $this->checkFile([
+            'filename' => 'Undangan Pernikahan.apk', 'detected_type' => 'apk', 'apk_package' => 'com.undangan.digital',
+            'apk_permissions' => [self::A.'READ_SMS', self::A.'BIND_ACCESSIBILITY_SERVICE', self::A.'SYSTEM_ALERT_WINDOW', self::A.'INTERNET', 'com.vendor.permission.X'],
+        ])->assertOk()
+            ->assertJsonPath('level', 'Tinggi')
+            ->assertJsonPath('summary.headline', 'Jangan pasang aplikasi ini')
+            ->assertJsonPath('summary.kind', 'apk')
+            ->assertJsonPath('apk.readable', true)
+            ->assertJsonPath('apk.package', 'com.undangan.digital')
+            ->assertJsonPath('apk.other_count', 1)
+            ->assertJsonPath('apk.permissions.0.kind', 'sms'); // yang paling berbahaya tampil dulu
+
+        foreach (['apk_perm_sms', 'apk_perm_accessibility', 'apk_perm_overlay'] as $id) {
+            $this->assertContains($id, $this->ids($response));
+        }
+        $this->assertStringContainsString('mode pesawat', implode(' ', $response->json('summary.steps')));
+        $this->assertCount(3, $response->json('summary.reasons'));
+    }
+
+    public function test_apk_biasa_tanpa_izin_berbahaya_hanya_sedang(): void
+    {
+        $this->fakeServices(['www.virustotal.com/api/v3/files/*' => Http::response([], 404)]);
+
+        $response = $this->checkFile(['filename' => 'kalkulator.apk', 'detected_type' => 'apk', 'apk_permissions' => [self::A.'INTERNET']])
+            ->assertOk()
+            ->assertJsonPath('level', 'Sedang');
+
+        $this->assertNotContains('apk_perm_sms', $this->ids($response));
+        $this->assertNotEmpty(array_filter($response->json('summary.passed'), fn ($p) => str_contains($p, 'izin')));
+    }
+
+    public function test_manifest_apk_tidak_terbaca_dilaporkan_belum_lengkap(): void
+    {
+        $this->fakeServices(['www.virustotal.com/api/v3/files/*' => Http::response([], 404)]);
+
+        $this->checkFile(['filename' => 'aneh.apk', 'detected_type' => 'apk', 'flags' => ['apk_unreadable' => true]])
+            ->assertOk()
+            ->assertJsonPath('coverage.status', 'sebagian')
+            ->assertJsonPath('checks.apk_permissions.state', 'skipped')
+            ->assertJsonPath('apk.readable', false);
+    }
+
+    public function test_daftar_izin_tidak_valid_ditolak(): void
+    {
+        $this->fakeServices();
+
+        $this->checkFile(['filename' => 'a.apk', 'apk_permissions' => ['<script>alert(1)</script>']])->assertStatus(422);
+        $this->checkFile(['filename' => 'a.apk', 'apk_permissions' => array_fill(0, 151, self::A.'INTERNET')])->assertStatus(422);
+        $this->checkFile(['filename' => 'a.apk', 'apk_package' => 'bukan paket!'])->assertStatus(422);
+    }
+
+    public function test_ringkasan_file_bersih_menyebut_yang_sudah_dicek_dan_yang_belum(): void
+    {
+        $this->fakeServices(['www.virustotal.com/api/v3/files/*' => Http::response([], 404)]);
+
+        $response = $this->checkFile(['filename' => 'laporan.pdf', 'detected_type' => 'pdf'])
+            ->assertOk()
+            ->assertJsonPath('summary.headline', 'Tidak ada tanda bahaya yang terdeteksi');
+
+        $this->assertGreaterThanOrEqual(3, count($response->json('summary.passed')));
+        $this->assertContains('Reputasi di VirusTotal', array_column($response->json('summary.unchecked'), 'label'));
+    }
 }

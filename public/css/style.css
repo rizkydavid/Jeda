@@ -1480,3 +1480,33 @@ html, body, .site-header, .page-content, .card, .notice, .q, .check, .opt, .sw, 
 .cek-facts { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 13px; }
 .cek-facts dt { color: var(--mut); }
 .cek-facts dd { margin: 0; word-break: break-all; }
+
+/* ---- Cek file: hasil pemeriksaan ---- */
+.cek-verdict { display: grid; gap: 8px; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--line); border-left-width: 6px; background: var(--soft); }
+.cek-verdict.is-high { border-left-color: #d6334f; }
+.cek-verdict.is-mid { border-left-color: #e0902b; }
+.cek-verdict.is-low { border-left-color: #7a5cf0; }
+.cek-verdict.is-none { border-left-color: #8a96ad; }
+.cek-headline { margin: 0; font-size: 20px; line-height: 1.25; }
+.cek-file { word-break: break-all; color: var(--mut); }
+.cek-sec { display: grid; gap: 6px; }
+.cek-sec h3 { margin: 0; font-size: 15px; }
+.cek-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 14px; }
+.cek-list li { display: flex; gap: 10px; align-items: flex-start; }
+.cek-ico { flex: none; width: 20px; height: 20px; display: grid; place-items: center; border-radius: 50%; font-size: 12px; font-weight: 800; background: var(--soft); color: var(--ink); }
+.is-reasons .cek-ico { background: #d6334f; color: #fff; }
+.is-passed .cek-ico { background: #1e9e68; color: #fff; }
+.is-unchecked .cek-ico { background: #8a96ad; color: #fff; }
+.cek-perms { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 14px; }
+.cek-perms li { display: flex; gap: 10px; align-items: flex-start; }
+.cek-kind { flex: none; min-width: 92px; text-align: center; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 700; background: var(--soft); border: 1px solid var(--line); }
+.cek-kind.is-danger { background: #d6334f; border-color: #d6334f; color: #fff; }
+.cek-kind.is-warn { background: #e0902b; border-color: #e0902b; color: #1b1405; }
+.cek-more { border-top: 1px solid var(--line); padding-top: 10px; }
+.cek-more > summary { cursor: pointer; font-weight: 600; font-size: 14px; }
+.cek-more[open] > summary { margin-bottom: 10px; }
+@media (max-width: 520px) { .cek-headline { font-size: 18px; } .cek-kind { min-width: 84px; } }
+.cek-verdict.is-high { background: color-mix(in srgb, #d6334f 9%, var(--bg)); }
+.cek-verdict.is-mid { background: color-mix(in srgb, #e0902b 10%, var(--bg)); }
+.cek-head .tag.t-soft { background: var(--line); }
+.cek-sec .cek-steps { font-size: 14px; }

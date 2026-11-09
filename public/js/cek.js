@@ -158,31 +158,80 @@
     return `${(bytes / 1048576).toFixed(1)} MB`;
   }
 
+  const KIND_LABEL = {
+    sms: 'SMS', accessibility: 'Aksesibilitas', notification: 'Notifikasi', overlay: 'Menimpa layar', device_admin: 'Admin perangkat',
+    install: 'Pasang aplikasi', sensitive: 'Data pribadi', weak: 'Latar belakang', normal: 'Biasa',
+  };
+  const KIND_DANGER = new Set(['sms', 'accessibility', 'notification', 'overlay', 'device_admin', 'install']);
+
+  function section(title, icon, items, cls) {
+    if (!items || !items.length) return null;
+    return h('section', { class: `cek-sec ${cls || ''}` },
+      h('h3', {}, title),
+      h('ul', { class: 'cek-list' }, items.map((item) =>
+        h('li', {}, h('span', { class: 'cek-ico', 'aria-hidden': 'true' }, icon), h('span', {}, item)))));
+  }
+
+  function renderApk(apk) {
+    if (!apk) return null;
+    if (!apk.readable) {
+      return h('section', { class: 'cek-sec' }, h('h3', {}, 'Izin yang diminta aplikasi'),
+        h('p', { class: 'small', style: 'margin:0' }, 'Daftar izin tidak bisa dibaca dari APK ini, jadi bagian ini tidak ikut dinilai.'));
+    }
+    const shown = apk.permissions.filter((p) => p.kind !== 'normal');
+    const normal = apk.permissions.length - shown.length;
+    const extra = normal + (apk.other_count || 0);
+    return h('section', { class: 'cek-sec' },
+      h('h3', {}, 'Izin yang diminta aplikasi'),
+      apk.package ? h('p', { class: 'small', style: 'margin:0' }, 'Nama paket: ', h('code', {}, apk.package)) : null,
+      shown.length
+        ? h('ul', { class: 'cek-perms' }, shown.map((p) =>
+            h('li', {},
+              h('span', { class: `cek-kind ${KIND_DANGER.has(p.kind) ? 'is-danger' : (p.kind === 'sensitive' ? 'is-warn' : '')}` }, KIND_LABEL[p.kind] || p.kind),
+              h('span', {}, p.label))))
+        : h('p', { class: 'small', style: 'margin:0' }, 'Tidak ada izin sensitif yang terbaca.'),
+      extra > 0 ? h('p', { class: 'small', style: 'margin:0' }, `+ ${extra} izin lain yang umum atau tidak dikenali.`) : null);
+  }
+
   function renderFileResult(target, r, name) {
+    const sm = r.summary || { headline: r.message, reasons: [], passed: [], unchecked: [], steps: [] };
     const signals = Array.isArray(r.signals) ? r.signals : [];
     const checks = Object.values(r.checks || {});
-    const incomplete = r.coverage && r.coverage.status !== 'lengkap';
+    const lvl = ({ Tinggi: 'is-high', Sedang: 'is-mid', Rendah: 'is-low' })[r.level] || 'is-none';
+    const unchecked = (sm.unchecked || []).map((u) => (u.note ? `${u.label}: ${u.note}` : u.label));
 
     target.replaceChildren(
       h('div', { class: 'cek-result' },
-        h('div', { class: 'cek-head' },
-          h('span', { class: `tag ${TAG_BY_LEVEL[r.level] || 't-soft'}` }, `Risiko: ${r.level}`),
-          h('span', { class: 'cek-score' }, `Skor ${r.score} dari 10`)),
-        h('p', { class: 'mut', style: 'margin:0' }, r.message),
-        incomplete ? h('p', { class: 'cek-notice', role: 'status' }, r.coverage_note) : null,
-        h('dl', { class: 'cek-facts' },
-          h('dt', {}, 'Nama'), h('dd', {}, name),
-          h('dt', {}, 'Ukuran'), h('dd', {}, formatSize(r.size)),
-          h('dt', {}, 'Ekstensi'), h('dd', {}, r.extension ? `.${r.extension}` : '(tidak ada)'),
-          h('dt', {}, 'Isi sebenarnya'), h('dd', {}, r.detected_type ? (TYPE_LABEL[r.detected_type] || r.detected_type) : 'Tidak dibaca')),
-        signals.length
-          ? h('ul', { class: 'cek-signals' }, signals.map((s) =>
-              h('li', {},
-                h('div', {}, h('b', {}, s.label), h('span', { class: 'small' }, s.detail)),
-                s.points > 0 ? h('span', { class: 'cek-points' }, `+${s.points}`) : null)))
-          : h('p', { class: 'small', style: 'margin:0' }, 'Tidak ada tanda yang cocok dengan pola yang berhasil diperiksa.'),
-        h('ul', { class: 'cek-sources' }, checks.map((c) =>
-          h('li', {}, h('b', {}, `${c.label}: `), STATE_LABEL[c.state] ? `[${STATE_LABEL[c.state]}] ` : '', c.note || ''))),
+        h('div', { class: `cek-verdict ${lvl}` },
+          h('div', { class: 'cek-head' },
+            h('span', { class: `tag ${TAG_BY_LEVEL[r.level] || 't-soft'}` }, `Risiko: ${r.level}`),
+            h('span', { class: 'cek-score' }, `Skor ${r.score} dari 10`)),
+          h('h3', { class: 'cek-headline' }, sm.headline),
+          h('p', { class: 'small cek-file', style: 'margin:0' }, name)),
+        section('Kenapa hasilnya begini', '!', sm.reasons, 'is-reasons'),
+        renderApk(r.apk),
+        section('Sudah dicek dan tidak ditemukan', '✓', sm.passed, 'is-passed'),
+        section('Belum bisa dicek', '?', unchecked, 'is-unchecked'),
+        r.coverage && r.coverage.status !== 'lengkap'
+          ? h('p', { class: 'cek-notice', role: 'status' }, 'Hasil di atas hanya berdasarkan pemeriksaan yang berhasil, jadi jangan dianggap aman.')
+          : null,
+        sm.steps && sm.steps.length
+          ? h('section', { class: 'cek-sec' }, h('h3', {}, 'Yang sebaiknya kamu lakukan'), h('ol', { class: 'cek-steps' }, sm.steps.map((x) => h('li', {}, x))))
+          : null,
+        h('details', { class: 'cek-more' },
+          h('summary', {}, `Rincian skor dan sumber (${signals.length} tanda)`),
+          h('dl', { class: 'cek-facts' },
+            h('dt', {}, 'Ukuran'), h('dd', {}, r.size ? formatSize(r.size) : '(tidak dibaca)'),
+            h('dt', {}, 'Ekstensi'), h('dd', {}, r.extension ? `.${r.extension}` : '(tidak ada)'),
+            h('dt', {}, 'Isi sebenarnya'), h('dd', {}, r.detected_type ? (TYPE_LABEL[r.detected_type] || r.detected_type) : 'Tidak dibaca')),
+          signals.length
+            ? h('ul', { class: 'cek-signals' }, signals.map((x) =>
+                h('li', {},
+                  h('div', {}, h('b', {}, x.label), h('span', { class: 'small' }, x.detail)),
+                  x.points > 0 ? h('span', { class: 'cek-points' }, `+${x.points}`) : h('span', { class: 'cek-points' }, 'info'))))
+            : h('p', { class: 'small', style: 'margin:0' }, 'Tidak ada tanda yang cocok dengan pola yang diperiksa.'),
+          h('ul', { class: 'cek-sources' }, checks.map((c) =>
+            h('li', {}, h('b', {}, `${c.label}: `), STATE_LABEL[c.state] ? `[${STATE_LABEL[c.state]}] ` : '', c.note || '')))),
         h('p', { class: 'small', style: 'margin:0' }, 'Ini indikator risiko, bukan jaminan aman atau tidak. Antivirus tetap perlu dipakai.'),
         h('a', { class: 'btn ghost block', href: '/jam-emas' }, 'Sudah terlanjur membuka file ini? Lihat langkahnya')));
   }

@@ -37,6 +37,7 @@ return [
         'file_name' => 7,
         'file_type' => 7,
         'file_content' => 6,
+        'apk_permission' => 7,
     ],
 
     // Akhiran dua tingkat agar domain utama terbaca benar (tanpa Public Suffix List).
@@ -126,5 +127,38 @@ return [
     'file_types' => [
         'pe', 'elf', 'macho', 'java', 'lnk', 'script', 'apk', 'jar', 'pdf', 'ole', 'ooxml', 'zip', 'rar', '7z',
         'gzip', 'rtf', 'png', 'jpeg', 'gif', 'webp', 'bmp', 'html', 'svg', 'text', 'unknown',
+    ],
+
+    // Izin Android yang dikenali. Browser membaca SEMUA izin dari dalam APK, tetapi server hanya menilai yang tercantum di sini.
+    // kind: sms | accessibility | notification | overlay | device_admin | install | sensitive | weak | normal
+    'apk_permissions' => [
+        'android.permission.READ_SMS' => ['Membaca SMS (termasuk kode OTP)', 'sms'],
+        'android.permission.RECEIVE_SMS' => ['Menerima SMS (termasuk kode OTP)', 'sms'],
+        'android.permission.SEND_SMS' => ['Mengirim SMS atas namamu (bisa memotong pulsa)', 'sms'],
+        'android.permission.BIND_ACCESSIBILITY_SERVICE' => ['Membaca dan mengendalikan layar aplikasi lain', 'accessibility'],
+        'android.permission.BIND_NOTIFICATION_LISTENER_SERVICE' => ['Membaca semua notifikasi (termasuk OTP)', 'notification'],
+        'android.permission.SYSTEM_ALERT_WINDOW' => ['Tampil menimpa aplikasi lain (bisa menyamar jadi halaman bank)', 'overlay'],
+        'android.permission.BIND_DEVICE_ADMIN' => ['Menjadi admin perangkat (sulit dicopot)', 'device_admin'],
+        'android.permission.REQUEST_INSTALL_PACKAGES' => ['Memasang aplikasi lain', 'install'],
+        'android.permission.READ_CONTACTS' => ['Membaca kontak', 'sensitive'],
+        'android.permission.READ_CALL_LOG' => ['Membaca riwayat panggilan', 'sensitive'],
+        'android.permission.RECORD_AUDIO' => ['Merekam suara', 'sensitive'],
+        'android.permission.CAMERA' => ['Memakai kamera', 'sensitive'],
+        'android.permission.ACCESS_FINE_LOCATION' => ['Mengetahui lokasi tepat', 'sensitive'],
+        'android.permission.MANAGE_EXTERNAL_STORAGE' => ['Mengakses semua file di HP', 'sensitive'],
+        'android.permission.PROCESS_OUTGOING_CALLS' => ['Memantau panggilan keluar', 'sensitive'],
+        'android.permission.RECEIVE_BOOT_COMPLETED' => ['Jalan otomatis saat HP menyala', 'weak'],
+        'android.permission.QUERY_ALL_PACKAGES' => ['Melihat daftar semua aplikasi terpasang', 'weak'],
+        'android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS' => ['Menolak dihemat baterai (tetap jalan di latar)', 'weak'],
+        'android.permission.INTERNET' => ['Mengakses internet', 'normal'],
+        'android.permission.ACCESS_NETWORK_STATE' => ['Melihat status jaringan', 'normal'],
+        'android.permission.VIBRATE' => ['Getar', 'normal'],
+        'android.permission.WAKE_LOCK' => ['Menjaga HP tetap menyala', 'normal'],
+    ],
+
+    // Poin per jenis izin berbahaya (dijumlahkan, dibatasi group_caps.apk_permission).
+    'apk_permission_points' => [
+        'sms' => 3, 'accessibility' => 4, 'notification' => 3, 'overlay' => 3, 'device_admin' => 3,
+        'install' => 2, 'sensitive' => 2, 'weak' => 1,
     ],
 ];

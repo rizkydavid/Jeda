@@ -22,7 +22,7 @@ final class FileAnalysisService
     public const FLAGS = [
         'archive_executable', 'archive_double_extension', 'archive_encrypted', 'archive_unreadable',
         'has_macro', 'pdf_javascript', 'pdf_launch', 'pdf_openaction', 'pdf_embedded',
-        'html_password_form', 'html_external_form', 'svg_script', 'rtf_object',
+        'html_password_form', 'html_external_form', 'svg_script', 'rtf_object', 'apk_unreadable',
     ];
 
     /** Jenis isi yang berarti "program atau pemasang". */
@@ -63,6 +63,13 @@ final class FileAnalysisService
             $signals = array_merge($signals, $this->contentSignals($name, $type, $flags));
         }
 
+        // --- APK: izin yang diminta (dibaca browser dari AndroidManifest.xml) ---------------------------
+        $apk = null;
+        if ($scanned && $type === 'apk') {
+            $apk = $this->apkInfo($in['apk_permissions'] ?? null, $in['apk_package'] ?? null, ! empty($flags['apk_unreadable']));
+            $signals = array_merge($signals, $this->apkSignals($apk, $this->matchesPretext($this->cleanName($name))));
+        }
+
         // --- Pemeriksaan: pembacaan isi (dilakukan browser) ------------------------------------------
         $checks = [];
         if ($scanned) {
@@ -73,6 +80,12 @@ final class FileAnalysisService
                 : 'Hanya nama file yang diperiksa. Pilih filenya agar isinya ikut dibaca di perangkatmu.');
         }
 
+        if ($apk !== null) {
+            $checks['apk_permissions'] = $apk['readable']
+                ? $this->check('Izin aplikasi (APK)', 'ok', 'Daftar izin dibaca dari dalam APK di perangkatmu.')
+                : $this->check('Izin aplikasi (APK)', 'skipped', 'Daftar izin tidak bisa dibaca dari APK ini.');
+        }
+
         // --- Pemeriksaan: reputasi hash (VirusTotal) ---------------------------------------------------
         [$checks['virustotal'], $vtSignals] = $this->virusTotalStep($in['sha256'] ?? null);
         $signals = array_merge($signals, $vtSignals);
@@ -80,6 +93,7 @@ final class FileAnalysisService
         $evaluation = $this->scorer->evaluate($signals, []);
         $coverage = $this->coverage($checks);
         $level = $evaluation['level'];
+        $ext = $this->extensionOf($name);
 
         return [
             'score' => $evaluation['score'],
@@ -90,7 +104,12 @@ final class FileAnalysisService
             'checks' => $checks,
             'message' => self::adviceFor($level),
             'coverage_note' => $coverage['status'] === 'lengkap' ? null : $this->coverageNote($coverage),
-            'extension' => $this->extensionOf($name),
+            'summary' => $this->summary($level, (bool) $evaluation['confirmed'], $evaluation['signals'], $checks, $type, $ext, $apk, $flags, $scanned),
+            'apk' => $apk === null ? null : [
+                'readable' => $apk['readable'], 'package' => $apk['package'],
+                'permissions' => $apk['permissions'], 'other_count' => $apk['other_count'],
+            ],
+            'extension' => $ext,
             'double_extension' => in_array('double_extension', array_column($evaluation['signals'], 'id'), true),
             'executable_type' => $this->isExecutableName($this->extensionOf($name)),
             'detected_type' => $scanned ? $type : null,
@@ -334,6 +353,208 @@ final class FileAnalysisService
     }
 
     // ------------------------------------------------------------------------------------------------
+    // APK: izin
+    // ------------------------------------------------------------------------------------------------
+
+    /**
+     * @param  mixed  $permissions  semua izin yang terbaca dari manifest, atau null jika manifest tidak terbaca
+     * @return array{readable:bool,package:?string,permissions:array<int,array{code:string,label:string,kind:string}>,other_count:int}
+     */
+    private function apkInfo(mixed $permissions, mixed $package, bool $unreadable): array
+    {
+        $known = config('jeda_cek.apk_permissions', []);
+        $readable = ! $unreadable && is_array($permissions);
+        $list = [];
+        $other = 0;
+        foreach ($readable ? array_unique($permissions) : [] as $code) {
+            if (is_string($code) && isset($known[$code])) {
+                $list[] = ['code' => $code, 'label' => $known[$code][0], 'kind' => $known[$code][1]];
+            } else {
+                $other++;
+            }
+        }
+        // Yang paling berbahaya tampil lebih dulu.
+        $rank = array_flip(['sms', 'accessibility', 'notification', 'overlay', 'device_admin', 'install', 'sensitive', 'weak', 'normal']);
+        usort($list, fn ($a, $b) => ($rank[$a['kind']] ?? 99) <=> ($rank[$b['kind']] ?? 99));
+
+        return [
+            'readable' => $readable,
+            'package' => is_string($package) && preg_match('/^[A-Za-z0-9_.]{1,150}$/', $package) === 1 ? $package : null,
+            'permissions' => $list,
+            'other_count' => $other,
+        ];
+    }
+
+    /** @return array<int,Signal> */
+    private function apkSignals(array $apk, bool $pretext): array
+    {
+        if (! $apk['readable']) {
+            return [new Signal('apk_manifest_unreadable', 'apk_permission', 'Daftar izin aplikasi tidak bisa dibaca',
+                'Aplikasi yang manifest-nya rusak atau disembunyikan sering sengaja dibuat agar sulit dianalisis.', 2)];
+        }
+
+        $points = config('jeda_cek.apk_permission_points', []);
+        $byKind = [];
+        foreach ($apk['permissions'] as $p) {
+            $byKind[$p['kind']][] = $p['label'];
+        }
+        $why = $pretext ? ' Aplikasi dengan nama seperti ini tidak membutuhkan izin tersebut.' : '';
+        $defs = [
+            'sms' => ['apk_perm_sms', 'Bisa membaca atau mengirim SMS', 'Kode OTP bank dan akun dikirim lewat SMS. Aplikasi yang bisa membacanya dapat mengosongkan rekeningmu.'.$why],
+            'accessibility' => ['apk_perm_accessibility', 'Meminta kendali atas layar (aksesibilitas)', 'Izin ini membuat aplikasi bisa membaca dan menekan layar aplikasi lain, termasuk m-banking. Ini izin yang paling sering disalahgunakan trojan perbankan.'.$why],
+            'notification' => ['apk_perm_notification', 'Bisa membaca semua notifikasi', 'Notifikasi sering memuat kode OTP dan isi pesan pribadi.'.$why],
+            'overlay' => ['apk_perm_overlay', 'Bisa tampil menimpa aplikasi lain', 'Dipakai untuk menempelkan halaman login palsu di atas aplikasi bank.'.$why],
+            'device_admin' => ['apk_perm_device_admin', 'Meminta menjadi admin perangkat', 'Aplikasi yang jadi admin sulit dicopot oleh pemiliknya.'.$why],
+            'install' => ['apk_perm_install', 'Bisa memasang aplikasi lain', 'Aplikasi penipu sering memasang aplikasi berbahaya tambahan secara diam-diam.'],
+            'sensitive' => ['apk_perm_sensitive', 'Meminta akses data pribadi', 'Misalnya kontak, riwayat panggilan, mikrofon, kamera, atau lokasi. Pastikan memang dibutuhkan fungsi aplikasinya.'],
+            'weak' => ['apk_perm_weak', 'Jalan terus di latar belakang', 'Banyak aplikasi sah memakainya, jadi ini hanya dihitung jika ada tanda lain.'],
+        ];
+        $signals = [];
+        foreach ($defs as $kind => [$id, $label, $detail]) {
+            if (empty($byKind[$kind])) {
+                continue;
+            }
+            $signals[] = new Signal($id, 'apk_permission', $label, $detail.' Izin yang diminta: '.implode('; ', $byKind[$kind]).'.',
+                (int) ($points[$kind] ?? 1), needsOther: $kind === 'weak');
+        }
+
+        return $signals;
+    }
+
+    // ------------------------------------------------------------------------------------------------
+    // Ringkasan hasil untuk pengguna
+    // ------------------------------------------------------------------------------------------------
+
+    /**
+     * Ringkasan yang dibaca manusia: apa kesimpulannya, kenapa, apa yang sudah dicek dan tidak ditemukan,
+     * apa yang belum bisa dicek, dan langkah yang sebaiknya dilakukan. Semuanya turunan dari hasil pemeriksaan
+     * (bukan karangan), sehingga selalu konsisten dengan skor.
+     *
+     * @param  array<int,array<string,mixed>>  $signals
+     * @param  array<string,array<string,mixed>>  $checks
+     * @return array{kind:string,headline:string,reasons:array<int,string>,passed:array<int,string>,unchecked:array<int,array{label:string,note:?string}>,steps:array<int,string>}
+     */
+    private function summary(string $level, bool $confirmed, array $signals, array $checks, string $type, string $ext, ?array $apk, array $flags, bool $scanned): array
+    {
+        $ids = array_column($signals, 'id');
+        $has = fn (string ...$x) => array_intersect($x, $ids) !== [];
+        $kind = match (true) {
+            $type === 'apk' || $ext === 'apk' => 'apk',
+            in_array($type, ['pe', 'elf', 'macho', 'java', 'lnk', 'jar'], true) || ($this->isExecutableName($ext) && $ext !== 'apk') => 'program',
+            in_array($type, ['html', 'svg'], true) || in_array($ext, self::HTML_EXTENSIONS, true) => 'web',
+            in_array($type, ['zip', 'rar', '7z', 'gzip'], true) => 'archive',
+            default => 'document',
+        };
+
+        // Kesimpulan
+        $incomplete = ($checks['content']['state'] ?? 'ok') !== 'ok' || ($checks['virustotal']['state'] ?? 'ok') !== 'ok';
+        $headline = match (true) {
+            $confirmed => 'Banyak mesin keamanan menandai file ini berbahaya',
+            $level === 'Tinggi' && $kind === 'apk' => 'Jangan pasang aplikasi ini',
+            $level === 'Tinggi' && $kind === 'program' => 'Jangan jalankan file ini',
+            $level === 'Tinggi' => 'Jangan buka file ini',
+            $level === 'Sedang' => 'Hati-hati sebelum membuka file ini',
+            $level === 'Rendah' => 'Ada tanda kecil, cek ulang dulu',
+            $incomplete => 'Belum ada tanda bahaya, tetapi pemeriksaan belum lengkap',
+            default => 'Tidak ada tanda bahaya yang terdeteksi',
+        };
+
+        // Alasan: tanda dengan poin terbesar
+        $scored = array_filter($signals, fn ($s) => $s['points'] > 0);
+        usort($scored, fn ($a, $b) => $b['points'] <=> $a['points']);
+        $reasons = array_map(fn ($s) => $s['label'], array_slice($scored, 0, 3));
+
+        // Yang sudah diperiksa dan tidak ditemukan
+        $passed = [];
+        if (! $has('bidi_control', 'double_extension', 'name_padding')) {
+            $passed[] = 'Nama file tidak memakai trik ekstensi ganda atau karakter tersembunyi.';
+        }
+        if ($scanned) {
+            if (! $has('type_mismatch_executable', 'executable_content', 'type_mismatch_minor') && isset(self::EXPECTED[$ext])) {
+                $passed[] = "Isi file sesuai dengan ekstensinya (.$ext).";
+            }
+            if ($type === 'pdf' && ! $has('pdf_javascript', 'pdf_launch', 'pdf_embedded', 'pdf_openaction')) {
+                $passed[] = 'PDF tidak memuat JavaScript, peluncur program, atau file tersembunyi.';
+            }
+            if (in_array($type, ['ooxml', 'ole'], true) && ! $has('macro_content')) {
+                $passed[] = 'Tidak ditemukan makro di dalam dokumen.';
+            }
+            if ($type === 'zip' && ! $has('archive_executable', 'archive_double_extension', 'archive_encrypted')) {
+                $passed[] = 'Arsip tidak berisi program, file berekstensi ganda, atau sandi.';
+            }
+            if (in_array($type, ['html', 'svg'], true) && ! $has('html_password_form', 'html_external_form', 'svg_script')) {
+                $passed[] = 'Tidak ada kolom kata sandi, form ke alamat lain, atau skrip mencurigakan.';
+            }
+            if ($apk !== null && $apk['readable'] && ! $has('apk_perm_sms', 'apk_perm_accessibility', 'apk_perm_notification', 'apk_perm_overlay', 'apk_perm_device_admin', 'apk_perm_install')) {
+                $passed[] = 'Aplikasi tidak meminta izin yang biasa disalahgunakan penipu (SMS, aksesibilitas, notifikasi, menimpa layar, admin perangkat, memasang aplikasi).';
+            }
+        }
+        if (($checks['virustotal']['result'] ?? null) === 'clean') {
+            $passed[] = $checks['virustotal']['note'];
+        }
+
+        // Yang belum bisa dicek
+        $unchecked = [];
+        foreach ($checks as $c) {
+            if ($c['state'] !== 'ok') {
+                $unchecked[] = ['label' => $c['label'], 'note' => $c['note'] ?? null];
+            }
+        }
+        if (($checks['virustotal']['result'] ?? null) === 'unknown') {
+            $unchecked[] = ['label' => 'Reputasi di VirusTotal', 'note' => 'File ini belum pernah dianalisis VirusTotal. Itu wajar untuk file baru dan bukan berarti aman.'];
+        }
+        if (! empty($flags['archive_unreadable'])) {
+            $unchecked[] = ['label' => 'Isi arsip', 'note' => 'Daftar isi arsip tidak bisa dibaca, jadi isinya tidak diperiksa.'];
+        }
+        if (in_array('archive_encrypted', $ids, true)) {
+            $unchecked[] = ['label' => 'Isi arsip', 'note' => 'Arsip dilindungi sandi, jadi isinya tidak bisa diperiksa.'];
+        }
+
+        return [
+            'kind' => $kind,
+            'headline' => $headline,
+            'reasons' => $reasons,
+            'passed' => array_values(array_unique($passed)),
+            'unchecked' => $unchecked,
+            'steps' => $this->stepsFor($level, $kind),
+        ];
+    }
+
+    /** @return array<int,string> */
+    private function stepsFor(string $level, string $kind): array
+    {
+        if ($level === 'Tinggi') {
+            $steps = $kind === 'apk'
+                ? ['Jangan pasang aplikasi ini. Hapus filenya dari HP.', "Kalau HP meminta izin memasang dari 'sumber tidak dikenal', jangan diizinkan."]
+                : ['Jangan buka atau jalankan file ini. Hapus filenya.'];
+            $steps[] = 'Tanyakan ke pengirim lewat telepon atau bertemu langsung, bukan lewat chat yang sama. Akunnya bisa saja sudah diretas.';
+            $steps[] = $kind === 'apk'
+                ? 'Kalau sudah terlanjur terpasang: aktifkan mode pesawat, copot aplikasinya di Setelan > Aplikasi, ganti kata sandi m-banking dan e-mail dari perangkat lain, lalu hubungi bank lewat nomor resmi. Lihat halaman Jam Emas.'
+                : 'Kalau sudah terlanjur dibuka: putuskan internet, jalankan antivirus, dan ganti kata sandi penting dari perangkat lain. Lihat halaman Jam Emas.';
+
+            return $steps;
+        }
+        if ($level === 'Sedang') {
+            return [
+                'Pastikan kamu kenal pengirimnya dan memang sedang menunggu file ini.',
+                'Konfirmasi lewat jalur lain (telepon atau bertemu) sebelum membuka.',
+                'Kalau ragu, jangan dibuka. Bertanya dulu tidak merugikan.',
+            ];
+        }
+        if ($level === 'Rendah') {
+            return [
+                'Buka hanya kalau kamu mengenal pengirimnya.',
+                'Pastikan aplikasi pembacanya (PDF, Office, antivirus) sudah diperbarui.',
+            ];
+        }
+
+        return [
+            'Hasil ini bukan jaminan aman. Tetap buka hanya file dari pengirim yang kamu kenal.',
+            'Pastikan aplikasi pembacanya (PDF, Office, antivirus) sudah diperbarui.',
+        ];
+    }
+
+    // ------------------------------------------------------------------------------------------------
     // VirusTotal (hash)
     // ------------------------------------------------------------------------------------------------
 
@@ -403,12 +624,12 @@ final class FileAnalysisService
     private function coverage(array $checks): array
     {
         $missing = [];
-        foreach (['content', 'virustotal'] as $key) {
-            if (($checks[$key]['state'] ?? '') !== 'ok') {
+        foreach (['content', 'apk_permissions', 'virustotal'] as $key) {
+            if (isset($checks[$key]) && $checks[$key]['state'] !== 'ok') {
                 $missing[] = ['label' => $checks[$key]['label'], 'note' => $checks[$key]['note'] ?? null];
             }
         }
-        $status = $missing === [] ? 'lengkap' : (count($missing) === 2 ? 'terbatas' : 'sebagian');
+        $status = $missing === [] ? 'lengkap' : (isset($checks['content']) && $checks['content']['state'] !== 'ok' && ($checks['virustotal']['state'] ?? '') !== 'ok' ? 'terbatas' : 'sebagian');
 
         return ['status' => $status, 'missing' => $missing];
     }

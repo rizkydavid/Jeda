@@ -61,8 +61,8 @@
                 <span class="small">APK, PDF, dokumen, arsip, gambar, apa saja. Maksimal {{ (int) (config('jeda_cek.max_file_bytes') / 1048576) }} MB.</span>
             </label>
             <input id="fileInput" type="file" class="cek-visually-hidden"/>
-            <div class="row" style="flex-wrap:nowrap;gap:8px">
-                <input id="fileNameInput" aria-label="Nama file" class="jeda-field" style="flex:1;min-width:0" maxlength="255" placeholder="atau tulis nama file saja, mis. undangan.apk"/>
+            <div class="row" style="flex-wrap:wrap;gap:8px">
+                <input id="fileNameInput" aria-label="Nama file" class="jeda-field" style="flex:1 1 200px;min-width:0" maxlength="255" placeholder="atau tulis nama file saja, mis. undangan.apk"/>
                 <button id="fileNameButton" type="button" class="btn ghost" style="white-space:nowrap">Periksa nama file</button>
             </div>
             <div id="fileResult" aria-live="polite">

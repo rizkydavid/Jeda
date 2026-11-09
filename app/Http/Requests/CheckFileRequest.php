@@ -26,6 +26,10 @@ class CheckFileRequest extends FormRequest
             'detected_type' => ['nullable', 'string', Rule::in(config('jeda_cek.file_types', []))],
             'content_scanned' => ['nullable', 'boolean'],
             'flags' => ['nullable', 'array', 'max:'.count(FileAnalysisService::FLAGS)],
+            // APK: nama paket dan daftar izin yang dibaca browser dari AndroidManifest.xml.
+            'apk_package' => ['nullable', 'string', 'regex:/^[A-Za-z0-9_.]{1,150}$/'],
+            'apk_permissions' => ['nullable', 'array', 'max:150'],
+            'apk_permissions.*' => ['string', 'max:120', 'regex:/^[A-Za-z0-9_.]+$/'],
         ];
         foreach (FileAnalysisService::FLAGS as $flag) {
             $rules["flags.$flag"] = ['nullable', 'boolean'];
