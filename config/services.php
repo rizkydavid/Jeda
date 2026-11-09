@@ -54,11 +54,6 @@ return [
         'model' => env('JEDA_AI_MODEL', 'claude-haiku-5-5'),
     ],
 
-    // Cek reputasi tautan (opsional). Buat key gratis di Google Cloud Console > Safe Browsing API.
-    'safe_browsing' => [
-        'key' => env('GOOGLE_SAFE_BROWSING_KEY'),
-    ],
-
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

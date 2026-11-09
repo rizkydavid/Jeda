@@ -30,9 +30,6 @@
             <input id="vtSubmit" type="checkbox" style="margin-top:3px"/>
             <span>Kirim alamat ini ke VirusTotal untuk dianalisis jika belum pernah diperiksa. Alamat bisa terlihat oleh komunitas keamanan VirusTotal.</span>
         </label>
-        <p class="small" style="margin:12px auto 0;max-width:680px">
-            Yang terjadi saat kamu menekan "Periksa tautan": server Jeda membuka tautan untuk melihat tujuan akhirnya (tanpa mengisi atau mengirim form apa pun), mengirim alamat tanpa parameter (bagian setelah tanda ?) ke Google Safe Browsing, mengirim nama domain ke layanan RDAP, dan mencari hash alamat di VirusTotal. Alamat lengkap tidak disimpan. Penjelasan AI hanya dibuat jika kamu menekan tombolnya, dan hanya menerima ringkasan tanda (tanpa alamat tautan).
-        </p>
     </section>
     <div class="grid2">
         <div class="card stack">
@@ -68,9 +65,6 @@
                 <input id="fileNameInput" aria-label="Nama file" class="jeda-field" style="flex:1;min-width:0" maxlength="255" placeholder="atau tulis nama file saja, mis. undangan.apk"/>
                 <button id="fileNameButton" type="button" class="btn ghost" style="white-space:nowrap">Periksa nama file</button>
             </div>
-            <p class="small" style="margin:0">
-                Saat kamu memilih file, browser membaca isinya di perangkatmu: jenis asli file, tanda berbahaya di dalamnya, dan sidik jari SHA-256. Yang dikirim ke server hanya nama file, ukuran, ringkasan temuan, dan SHA-256 (untuk dicocokkan ke VirusTotal). Isi file tidak pernah dikirim dan nama file tidak disimpan.
-            </p>
             <div id="fileResult" aria-live="polite">
                 <p class="mut" style="margin:0">
                     Belum ada file yang diperiksa. Pilih file di atas, atau tulis namanya lalu tekan "Periksa nama file".
