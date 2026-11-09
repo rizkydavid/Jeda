@@ -6,23 +6,23 @@
 
 <main class="wrap">
     <section class="hero" style="text-align:center">
-        <div class="row" style="justify-content:center;margin-bottom:18px">
-            <span class="chip on">
+        <nav class="row cek-tabs" aria-label="Pilih jenis pemeriksaan" style="justify-content:center;margin-bottom:18px">
+            <a class="chip on" href="#cek-tautan" data-cek-target="cek-tautan" aria-current="true">
                 Penguji Tautan
-            </span>
-            <span class="chip">
+            </a>
+            <a class="chip" href="#cek-file" data-cek-target="cek-file">
                 Penguji File
-            </span>
-        </div>
+            </a>
+        </nav>
         <h1>
             Cek tautan sebelum kamu klik.
         </h1>
         <p class="mut" style="max-width:620px;margin:0 auto 22px;font-size:18px">
             Jeda menggabungkan pola alamat, umur domain, daftar situs berbahaya, dan tujuan akhir tautan untuk menunjukkan tanda bahayanya. Ini bukan vonis aman atau tidak.
         </p>
-        <div class="row" style="justify-content:center;flex-wrap:nowrap;max-width:720px;margin:0 auto">
-            <input id="linkInput" aria-label="URL" class="jeda-field" style="flex:1;min-width:0;border-radius:999px;padding:14px 20px" placeholder="Tempel tautan yang ingin diperiksa..."/>
-            <button id="linkButton" type="button" class="btn" style="border-radius:999px;white-space:nowrap">
+        <div class="row cek-linkrow" id="cek-tautan">
+            <input id="linkInput" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="URL" class="jeda-field" placeholder="Tempel tautan yang ingin diperiksa..."/>
+            <button id="linkButton" type="button" class="btn">
                 Periksa tautan
             </button>
         </div>
@@ -32,7 +32,7 @@
         </label>
     </section>
     <div class="grid2">
-        <div class="card stack">
+        <div class="card stack" id="hasil-tautan">
             <div class="row" style="justify-content:space-between;align-items:baseline">
                 <h2 style="margin:0">
                     Hasil pemeriksaan tautan
@@ -47,7 +47,7 @@
                 Sudah terlanjur klik? Lihat langkahnya
             </a>
         </div>
-        <div class="card stack" id="fileCard">
+        <div class="card stack" id="cek-file">
             <div class="row" style="justify-content:space-between;align-items:baseline">
                 <h2 style="margin:0">
                     Penguji File

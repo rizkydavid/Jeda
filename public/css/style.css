@@ -1510,3 +1510,23 @@ html, body, .site-header, .page-content, .card, .notice, .q, .check, .opt, .sw, 
 .cek-verdict.is-mid { background: color-mix(in srgb, #e0902b 10%, var(--bg)); }
 .cek-head .tag.t-soft { background: var(--line); }
 .cek-sec .cek-steps { font-size: 14px; }
+
+/* ---------- Halaman Cek: tab penguji, baris input responsif, hasil tautan ---------- */
+.cek-tabs .chip { display: inline-block; text-decoration: none; color: inherit; cursor: pointer; }
+.cek-tabs .chip.on { color: #fff; }
+.cek-tabs .chip:focus-visible { outline: 3px solid #5368f2; outline-offset: 2px; }
+#cek-tautan, #hasil-tautan, #cek-file { scroll-margin-top: 88px; }
+.cek-linkrow { justify-content: center; flex-wrap: nowrap; max-width: 720px; margin: 0 auto; }
+.cek-linkrow .jeda-field { flex: 1; min-width: 0; border-radius: 999px; padding: 14px 20px; }
+.cek-linkrow .btn { border-radius: 999px; white-space: nowrap; }
+@media (max-width: 560px) {
+  .cek-linkrow { flex-wrap: wrap; }
+  .cek-linkrow .jeda-field { flex: 1 1 100%; }
+  .cek-linkrow .btn { flex: 1 1 100%; text-align: center; }
+  .cek-tabs { gap: 8px; }
+}
+.cek-route { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font-size: 14px; }
+.cek-route code { padding: 2px 8px; border-radius: 8px; background: var(--soft); border: 1px solid var(--line); word-break: break-all; }
+.cek-route .is-final { border-color: #5368f2; font-weight: 700; }
+.cek-arrow { color: var(--mut); }
+.cek-verdict.is-none .cek-headline::before { content: ""; }

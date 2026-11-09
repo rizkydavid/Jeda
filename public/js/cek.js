@@ -48,27 +48,109 @@
     pending: 'Belum selesai', blocked: 'Tidak dibuka',
   };
 
+  const LEVEL_CLASS = { Tinggi: 'is-high', Sedang: 'is-mid', Rendah: 'is-low' };
+
+  /** Ringkasan yang dibaca manusia, diturunkan dari hasil pemeriksaan (bukan karangan), jadi selalu sesuai skor. */
+  function linkSummary(r) {
+    const signals = Array.isArray(r.signals) ? r.signals : [];
+    const checks = r.checks || {};
+    const hasGroup = (...g) => signals.some((x) => g.includes(x.group) && x.points > 0);
+    const incomplete = Boolean(r.coverage && r.coverage.status !== 'lengkap');
+    const hosts = Array.isArray(r.redirect_hosts) ? r.redirect_hosts : [];
+
+    const headline = r.confirmed ? 'Banyak mesin keamanan menandai tautan ini berbahaya'
+      : r.level === 'Tinggi' ? 'Jangan buka tautan ini'
+      : r.level === 'Sedang' ? 'Hati-hati sebelum membuka tautan ini'
+      : r.level === 'Rendah' ? 'Ada tanda kecil, cek ulang dulu'
+      : incomplete ? 'Belum ada tanda bahaya, tetapi pemeriksaan belum lengkap'
+      : r.official_brand ? `Alamat cocok dengan situs resmi ${r.official_brand}`
+      : 'Tidak ada tanda bahaya yang terdeteksi';
+
+    const reasons = signals.filter((x) => x.points > 0).sort((a, b) => b.points - a.points).slice(0, 3).map((x) => x.label);
+
+    const passed = [];
+    if (r.official_brand) passed.push(`Domain cocok dengan situs resmi ${r.official_brand}.`);
+    if (!hasGroup('url_pattern', 'keyword')) passed.push('Alamat tidak memakai trik yang lazim dipakai penipu (domain tiruan, kata pancingan, karakter menyamar).');
+    if (checks.safe_browsing?.state === 'ok' && checks.safe_browsing.result === 'clean') passed.push('Tidak ada di daftar situs berbahaya Google Safe Browsing.');
+    if (checks.virustotal?.state === 'ok' && checks.virustotal.result === 'clean') passed.push(checks.virustotal.note);
+    if (checks.redirect?.state === 'ok') {
+      passed.push(hosts.length > 1 ? `Tujuan akhir berhasil dilacak: ${r.final_hostname || hosts[hosts.length - 1]}.` : 'Tautan tidak dialihkan ke domain lain.');
+    }
+    if (checks.page?.state === 'ok' && checks.page.password_form === false) passed.push('Halaman tujuan tidak meminta kata sandi.');
+    if (checks.domain_age?.state === 'ok' && !hasGroup('domain') && checks.domain_age.note) passed.push(checks.domain_age.note);
+
+    const unchecked = [];
+    Object.values(checks).forEach((c) => {
+      if (c.state !== 'ok') unchecked.push(c.note ? `${c.label}: ${c.note}` : c.label);
+    });
+    if (checks.virustotal?.state === 'ok' && checks.virustotal.result === 'unknown') {
+      unchecked.push('VirusTotal: tautan ini belum pernah dianalisis di sana. Itu wajar untuk tautan baru dan bukan berarti aman.');
+    }
+
+    const steps = r.level === 'Tinggi' ? [
+      'Jangan buka tautan ini dan jangan isi data apa pun (kata sandi, OTP, nomor kartu).',
+      'Tanyakan ke pengirim lewat telepon atau bertemu langsung, bukan lewat chat yang sama. Akunnya bisa saja sudah diretas.',
+      'Kalau sudah terlanjur diklik atau data sudah diisi: ganti kata sandi dari perangkat lain dan hubungi bank lewat nomor resmi. Lihat halaman Jam Emas.',
+    ] : r.level === 'Sedang' ? [
+      'Jangan isi data pribadi di halaman itu sebelum yakin.',
+      'Konfirmasi ke pengirim lewat jalur lain (telepon atau bertemu).',
+      'Lebih aman: buka situs resminya dengan mengetik alamatnya sendiri atau lewat aplikasi resmi.',
+    ] : r.level === 'Rendah' ? [
+      'Buka hanya kalau kamu mengenal pengirimnya.',
+      'Jangan isi kata sandi atau OTP kalau halamannya terasa janggal.',
+    ] : [
+      'Hasil ini bukan jaminan aman. Tetap waspada kalau halaman meminta kata sandi, OTP, atau transfer.',
+      'Untuk bank dan e-wallet, selalu buka lewat aplikasi atau alamat resmi yang kamu ketik sendiri.',
+    ];
+
+    return { headline, reasons, passed: [...new Set(passed.filter(Boolean))], unchecked, steps, hosts };
+  }
+
+  function routeView(r, hosts) {
+    if (hosts.length < 2) return null;
+    const last = hosts.length - 1;
+    const nodes = [];
+    hosts.forEach((host, index) => {
+      if (index) nodes.push(h('span', { class: 'cek-arrow', 'aria-hidden': 'true' }, '→'));
+      nodes.push(h('code', { class: index === last ? 'is-final' : '' }, host));
+    });
+    return h('section', { class: 'cek-sec' },
+      h('h3', {}, 'Ke mana tautan ini sebenarnya menuju'),
+      h('div', { class: 'cek-route' }, nodes),
+      h('p', { class: 'small', style: 'margin:0' }, `Alamat yang ditempel ${hosts[0]}, tetapi tujuan akhirnya ${r.final_hostname || hosts[last]}.`));
+  }
+
   function renderResult(target, r) {
+    const sm = linkSummary(r);
     const signals = Array.isArray(r.signals) ? r.signals : [];
     const checks = Object.values(r.checks || {});
     const incomplete = r.coverage && r.coverage.status !== 'lengkap';
 
     target.replaceChildren(
       h('div', { class: 'cek-result' },
-        h('div', { class: 'cek-head' },
-          h('span', { class: `tag ${TAG_BY_LEVEL[r.level] || 't-soft'}` }, `Risiko: ${r.level}`),
-          h('span', { class: 'cek-score' }, `Skor ${r.score} dari 10`)),
-        h('p', { class: 'mut', style: 'margin:0' }, r.message),
-        incomplete ? h('p', { class: 'cek-notice', role: 'status' }, r.coverage_note) : null,
-        r.official_brand ? h('p', { class: 'small', style: 'margin:0' }, `Domain cocok dengan situs resmi ${r.official_brand}.`) : null,
-        signals.length
-          ? h('ul', { class: 'cek-signals' }, signals.map((s) =>
-              h('li', {},
-                h('div', {}, h('b', {}, s.label), h('span', { class: 'small' }, s.detail)),
-                s.points > 0 ? h('span', { class: 'cek-points' }, `+${s.points}`) : null)))
-          : h('p', { class: 'small', style: 'margin:0' }, 'Tidak ada tanda yang cocok dengan pola yang berhasil diperiksa.'),
-        h('ul', { class: 'cek-sources' }, checks.map((c) =>
-          h('li', {}, h('b', {}, `${c.label}: `), STATE_LABEL[c.state] ? `[${STATE_LABEL[c.state]}] ` : '', c.note || ''))),
+        h('div', { class: `cek-verdict ${LEVEL_CLASS[r.level] || 'is-none'}` },
+          h('div', { class: 'cek-head' },
+            h('span', { class: `tag ${TAG_BY_LEVEL[r.level] || 't-soft'}` }, `Risiko: ${r.level}`),
+            h('span', { class: 'cek-score' }, `Skor ${r.score} dari 10`)),
+          h('h3', { class: 'cek-headline' }, sm.headline),
+          r.hostname ? h('p', { class: 'small cek-file', style: 'margin:0' }, r.hostname) : null,
+          h('p', { class: 'mut', style: 'margin:0;font-size:14px' }, r.message)),
+        routeView(r, sm.hosts),
+        section('Kenapa hasilnya begini', '!', sm.reasons, 'is-reasons'),
+        section('Sudah dicek dan tidak ditemukan', '✓', sm.passed, 'is-passed'),
+        section('Belum bisa dicek', '?', sm.unchecked, 'is-unchecked'),
+        incomplete ? h('p', { class: 'cek-notice', role: 'status' }, r.coverage_note || 'Hasil di atas hanya berdasarkan pemeriksaan yang berhasil, jadi jangan dianggap aman.') : null,
+        h('section', { class: 'cek-sec' }, h('h3', {}, 'Yang sebaiknya kamu lakukan'), h('ol', { class: 'cek-steps' }, sm.steps.map((x) => h('li', {}, x)))),
+        h('details', { class: 'cek-more' },
+          h('summary', {}, `Rincian skor dan sumber (${signals.length} tanda)`),
+          signals.length
+            ? h('ul', { class: 'cek-signals' }, signals.map((x) =>
+                h('li', {},
+                  h('div', {}, h('b', {}, x.label), h('span', { class: 'small' }, x.detail)),
+                  h('span', { class: 'cek-points' }, x.points > 0 ? `+${x.points}` : 'info'))))
+            : h('p', { class: 'small', style: 'margin:0' }, 'Tidak ada tanda yang cocok dengan pola yang berhasil diperiksa.'),
+          h('ul', { class: 'cek-sources' }, checks.map((c) =>
+            h('li', {}, h('b', {}, `${c.label}: `), STATE_LABEL[c.state] ? `[${STATE_LABEL[c.state]}] ` : '', c.note || '')))),
         h('p', { class: 'small', style: 'margin:0' }, 'Ini indikator risiko, bukan jaminan aman atau tidak.'),
         r.explanation_available && r.explain_token ? explainBox(r.explain_token) : null));
   }
@@ -118,6 +200,22 @@
     target.replaceChildren(h('p', { class: 'mut', style: 'margin:0' }, text));
   }
 
+  // ---------- Scroll otomatis (penting di HP, tempat kartu hasil ada di bawah layar) ----------
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const behavior = () => (reduceMotion.matches ? 'auto' : 'smooth');
+
+  function scrollToEl(el) {
+    if (el) el.scrollIntoView({ behavior: behavior(), block: 'start' });
+  }
+
+  /** Geser ke kartu hasil hanya kalau bagian atasnya belum terlihat nyaman di layar. */
+  function revealCard(el) {
+    const card = el?.closest('.card') || el;
+    if (!card) return;
+    const top = card.getBoundingClientRect().top;
+    if (top < 0 || top > window.innerHeight * 0.5) requestAnimationFrame(() => scrollToEl(card));
+  }
+
   const linkInput = $('#linkInput');
   const linkButton = $('#linkButton');
   const linkResult = $('#linkResult');
@@ -131,11 +229,15 @@
     linkButton.disabled = true;
     linkButton.textContent = 'Memeriksa…';
     showMessage(linkResult, 'Memeriksa tautan. Ini bisa memakan beberapa detik karena tautan diikuti sampai tujuan akhirnya…');
+    linkInput.blur(); // tutup keyboard HP supaya hasil terlihat
+    revealCard(linkResult);
     try {
       const result = await postJson('/jeda/api/cek-tautan', { url, submit_to_virustotal: Boolean(vtSubmit?.checked) });
       renderResult(linkResult, result);
+      revealCard(linkResult);
     } catch (error) {
       showMessage(linkResult, error.message);
+      revealCard(linkResult);
     } finally {
       linkButton.disabled = false;
       linkButton.textContent = label;
@@ -246,6 +348,7 @@
   async function sendFile(summary) {
     const result = await postJson('/jeda/api/cek-file', summary);
     renderFileResult(fileResult, result, summary.filename);
+    revealCard(fileResult);
   }
 
   async function runFileCheck(file) {
@@ -267,6 +370,7 @@
     const filename = fileNameInput.value.trim();
     if (!filename) { fileNameInput.focus(); return; }
     showMessage(fileResult, 'Memeriksa nama file…');
+    fileNameInput.blur();
     try {
       await sendFile({ filename, size: 0, sha256: null, detected_type: null, content_scanned: false, flags: {} });
     } catch (error) {
@@ -287,6 +391,47 @@
   fileDrop?.addEventListener('drop', (event) => runFileCheck(event.dataTransfer?.files?.[0]));
   fileNameButton?.addEventListener('click', runNameCheck);
   fileNameInput?.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); runNameCheck(); } });
+
+
+  // ---------- Tombol Penguji Tautan / Penguji File ----------
+  // Berupa tautan #anchor biasa (tetap berfungsi tanpa JS); di sini ditambah scroll halus, fokus, dan penanda aktif.
+  const tabLinks = [...document.querySelectorAll('[data-cek-target]')];
+  const finePointer = window.matchMedia('(pointer: fine)');
+
+  function setActiveTab(id) {
+    tabLinks.forEach((a) => {
+      const on = a.dataset.cekTarget === id;
+      a.classList.toggle('on', on);
+      if (on) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current');
+    });
+  }
+
+  tabLinks.forEach((a) => a.addEventListener('click', (event) => {
+    const id = a.dataset.cekTarget;
+    const target = document.getElementById(id);
+    if (!target) return; // biarkan browser menangani anchor
+    event.preventDefault();
+    setActiveTab(id);
+    scrollToEl(target);
+    try { history.replaceState(null, '', `#${id}`); } catch { /* abaikan */ }
+    // Fokus ke kolom input hanya di perangkat dengan mouse; di HP fokus akan memunculkan keyboard yang menutupi layar.
+    if (finePointer.matches) (id === 'cek-tautan' ? linkInput : fileDrop)?.focus({ preventScroll: true });
+  }));
+
+  // Saat layout ditumpuk (HP/sempit), penanda aktif mengikuti posisi scroll.
+  const stacked = window.matchMedia('(max-width: 820px)');
+  let ticking = false;
+  window.addEventListener('scroll', () => {
+    if (!stacked.matches || ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      const fileTop = document.getElementById('cek-file')?.getBoundingClientRect().top ?? Infinity;
+      setActiveTab(fileTop < window.innerHeight * 0.45 ? 'cek-file' : 'cek-tautan');
+      ticking = false;
+    });
+  }, { passive: true });
+
+  if (location.hash === '#cek-file') setActiveTab('cek-file');
 
   linkButton?.addEventListener('click', runLinkCheck);
   linkInput?.addEventListener('keydown', (event) => {

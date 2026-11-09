@@ -189,7 +189,7 @@
       const textOf = (el) => (el?.innerText || el?.textContent || '').trim();
 
       // Make chips behave like real single-choice controls without changing their geometry.
-      $$('.row .chip').forEach(chip => {
+      $$('.row .chip:not([data-cek-target])').forEach(chip => {
         chip.tabIndex = 0; chip.setAttribute('role','button');
         const activate = () => {
           const row=chip.closest('.row'); if (!row) return;
@@ -223,19 +223,6 @@
       // Bedah pesan: logika ada di public/js/bedah.js (hanya dimuat di halaman Bedah).
 
       // Cek tautan dipindah ke public/js/cek.js (halaman /cek).
-      // Add filename checker to the file card, never upload/open the file.
-      const fileCard=$$('.grid2 .card').find(c=>/penguji file/i.test(textOf(c)));
-      if(fileCard && !$('#fileNameCheck')){
-        const panel=fileCard.querySelector('[style*="border:2px dashed"]');
-        if(panel){
-          const input=document.createElement('input');input.id='fileNameCheck';input.type='text';input.placeholder='Contoh: Undangan.pdf.apk';input.setAttribute('aria-label','Nama file');input.className='jeda-field';input.style.marginTop='14px';
-          const btn=document.createElement('button');btn.type='button';btn.className='btn block';btn.textContent='Periksa nama file';btn.style.marginTop='8px';
-          const out=document.createElement('div');out.id='fileNameFeedback';out.className='notice';out.style.marginTop='10px';out.hidden=true;
-          panel.append(input,btn,out);
-          btn.addEventListener('click',()=>{const name=input.value.trim();if(!name){toast('Masukkan nama file terlebih dahulu.');input.focus();return;}const ext=name.toLowerCase().split('.');const double=ext.length>2 && /^(pdf|jpg|jpeg|png|doc|docx)$/i.test(ext[ext.length-2]) && /^(apk|exe|bat|cmd|msi|scr)$/i.test(ext[ext.length-1]);const risky=/\.(apk|exe|bat|cmd|msi|scr|js|vbs)$/i.test(name);out.hidden=false;out.innerHTML=`<strong>${double?'Ekstensi ganda terdeteksi':risky?'Jenis file perlu kehati-hatian':'Nama file terbaca'}</strong><br>${double?'Nama terlihat seperti dokumen, tetapi ekstensi terakhir menunjukkan file yang dapat dijalankan.':risky?'Ekstensi ini dapat menjalankan program. Jangan buka jika sumbernya tidak jelas.':'Nama saja tidak cukup untuk memastikan file aman. Periksa pengirim dan sumbernya.'}<br><small>File tidak dibuka atau diunggah.</small>`;});
-        }
-      }
-
       // Jam Emas: adapt the action plan to the selected incident and enable checklist state.
       function updateEmergency(choice){
         const title=$('.card.dark h2'); const copy=$('.card.dark .mut');
