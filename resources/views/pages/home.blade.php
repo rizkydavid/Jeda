@@ -24,7 +24,6 @@
                 <textarea id="bedahInput" aria-label="Pesan" maxlength="12000" style="min-height:180px" placeholder="Tempel pesan WhatsApp, SMS, atau DM yang bikin kamu ragu di sini..."></textarea>
                 <div class="row">
                     <button class="btn" id="bedahRun" type="button">Bedah pesan</button>
-                    <button class="btn ghost" id="bedahSample" type="button">Pakai contoh fiktif</button>
                 </div>
                 <p class="small" style="margin-top:12px">
                     Pemeriksaan dasar berjalan di perangkatmu. Tidak ada teks yang dikirim ke mana pun kecuali kamu memilih analisis AI.

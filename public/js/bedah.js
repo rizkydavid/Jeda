@@ -260,7 +260,6 @@
   const input = $('#bedahInput');
   if (!input) return;
   const runBtn = $('#bedahRun');
-  const sampleBtn = $('#bedahSample');
   const aiBtn = $('#bedahAiRun');
   const aiOut = $('#bedahAiOut');
   const levelEl = $('#bedahLevel');
@@ -269,7 +268,6 @@
   const flagsEl = $('#bedahFlags');
   const stepsEl = $('#bedahSteps');
 
-  const SAMPLE = 'Selamat, kamu lolos jadi karyawan remote dengan gaji Rp8 juta per minggu. Konfirmasi dalam 30 menit dan jangan beri tahu siapa pun. Transfer biaya admin Rp150.000 untuk mengunci posisi. Klik: https://bankcontoh.com.login-verif.co.id/verifikasi';
   const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
 
   function toast(message) {
@@ -352,7 +350,6 @@
   }
 
   runBtn.addEventListener('click', run);
-  sampleBtn?.addEventListener('click', () => { input.value = SAMPLE; run(); });
   input.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') run(); });
 
   /* ================= 6. Analisis AI (opsional) ================= */
