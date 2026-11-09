@@ -6,6 +6,7 @@
     <meta name="description" content="Jeda membantu mengenali tanda tekanan dan penipuan digital sebelum mengambil keputusan.">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Jeda · @yield('title', 'Ruang Aman Digital')</title>
+    <link rel="icon" type="image/png" href="{{ asset('logo.png') }}?v=1">
     <script>
         (() => {
             try {
