@@ -27,6 +27,8 @@ class FileCheckController extends Controller
             'detected_type' => $request->validated('detected_type'),
             'content_scanned' => $request->boolean('content_scanned'),
             'flags' => array_map('boolval', (array) $request->validated('flags', [])),
+            'apk_package' => $request->validated('apk_package'),
+            'apk_permissions' => $request->validated('apk_permissions'),
         ]);
 
         $indicators = array_values(array_map(
@@ -85,6 +87,8 @@ class FileCheckController extends Controller
             'checks' => $result['checks'],
             'message' => $result['message'],
             'coverage_note' => $result['coverage_note'],
+            'summary' => $result['summary'],
+            'apk' => $result['apk'],
         ]);
     }
 }

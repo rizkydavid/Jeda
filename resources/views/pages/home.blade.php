@@ -36,7 +36,6 @@
 
                 <div class="row">
                     <button class="btn" id="bedahRun" type="button">Bedah pesan</button>
-                    <!-- <button class="btn ghost" id="bedahSample" type="button">Pakai contoh fiktif</button> -->
                 </div>
                 <p class="small" id="bedahAiOut" aria-live="polite" style="margin:12px 0 0"></p>
             </div>

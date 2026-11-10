@@ -102,6 +102,10 @@
     while (pos + 46 <= cd.length && entries.length < MAX_ZIP_ENTRIES) {
       if (u32(cd, pos) !== 0x02014b50) break;
       const flags = u16(cd, pos + 8);
+      const method = u16(cd, pos + 10);
+      const compSize = u32(cd, pos + 20);
+      const uncompSize = u32(cd, pos + 24);
+      const localOffset = u32(cd, pos + 42);
       const nameLen = u16(cd, pos + 28);
       const extraLen = u16(cd, pos + 30);
       const commentLen = u16(cd, pos + 32);
@@ -109,7 +113,7 @@
       const raw = cd.subarray(pos + 46, pos + 46 + nameLen);
       let name;
       try { name = new TextDecoder('utf-8', { fatal: false }).decode(raw); } catch { name = latin1(raw); }
-      entries.push({ name: name.replace(/\\/g, '/'), encrypted: (flags & 1) === 1 });
+      entries.push({ name: name.replace(/\\/g, '/'), encrypted: (flags & 1) === 1, method, compSize, uncompSize, localOffset });
       pos += 46 + nameLen + extraLen + commentLen;
     }
     return { unreadable: false, entries };
@@ -197,6 +201,119 @@
     return find('_VBA_PROJECT') || find('VBA') ? { has_macro: true } : {};
   }
 
+  // ---------------------------------------------------------------- APK: izin dari AndroidManifest.xml (AXML)
+
+  const MAX_MANIFEST_BYTES = 4 * 1024 * 1024; // batas sesudah dekompresi (anti zip-bomb)
+
+  /** Dekompresi deflate mentah dengan batas keluaran. Mengembalikan null jika tidak didukung/terlalu besar. */
+  async function inflateRaw(data, limit) {
+    if (typeof DecompressionStream === 'undefined') return null;
+    try {
+      const stream = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+      const reader = stream.getReader();
+      const chunks = [];
+      let total = 0;
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        total += value.length;
+        if (total > limit) { await reader.cancel(); return null; }
+        chunks.push(value);
+      }
+      const out = new Uint8Array(total);
+      let o = 0;
+      for (const c of chunks) { out.set(c, o); o += c.length; }
+      return out;
+    } catch { return null; }
+  }
+
+  /** Mengambil isi satu entri ZIP (tanpa mengekstrak ke disk). Null bila terenkripsi, tidak didukung, atau terlalu besar. */
+  async function readZipEntry(bytes, entry, limit) {
+    if (entry.encrypted || entry.uncompSize > limit) return null;
+    const o = entry.localOffset;
+    if (o + 30 > bytes.length || u32(bytes, o) !== 0x04034b50) return null;
+    const start = o + 30 + u16(bytes, o + 26) + u16(bytes, o + 28);
+    const raw = bytes.subarray(start, start + entry.compSize);
+    if (raw.length !== entry.compSize) return null;
+    if (entry.method === 0) return raw;
+    if (entry.method === 8) return inflateRaw(raw, limit);
+    return null;
+  }
+
+  /**
+   * Membaca AndroidManifest.xml biner (AXML): nama paket dan semua izin.
+   * Izin dikumpulkan dari <uses-permission android:name> dan dari atribut android:permission
+   * (mis. layanan aksesibilitas dan device admin dideklarasikan lewat atribut ini).
+   * @returns {{package:string|null, permissions:string[]}|null} null jika bukan AXML yang valid
+   */
+  function parseAxml(b) {
+    if (b.length < 8 || u16(b, 0) !== 0x0003) return null;
+    const total = Math.min(u32(b, 4), b.length);
+    let pos = u16(b, 2); // headerSize
+    let strings = [];
+    const perms = new Set();
+    let pkg = null;
+    let sawManifest = false;
+
+    const readStrings = (at) => {
+      const count = u32(b, at + 8);
+      const flags = u32(b, at + 16);
+      const strStart = at + u32(b, at + 20);
+      const utf8 = (flags & 0x100) !== 0;
+      const out = [];
+      for (let i = 0; i < count && i < 20000; i++) {
+        let p = strStart + u32(b, at + 28 + i * 4);
+        if (p >= b.length) { out.push(''); continue; }
+        if (utf8) {
+          let len = b[p++]; if (len & 0x80) len = ((len & 0x7f) << 8) | b[p++]; // panjang karakter (dilewati)
+          let blen = b[p++]; if (blen & 0x80) blen = ((blen & 0x7f) << 8) | b[p++];
+          out.push(new TextDecoder('utf-8').decode(b.subarray(p, p + blen)));
+        } else {
+          let len = u16(b, p); p += 2; if (len & 0x8000) { len = ((len & 0x7fff) << 16) | u16(b, p); p += 2; }
+          let s = ''; for (let k = 0; k < len && p + 2 * k + 1 < b.length; k++) s += String.fromCharCode(u16(b, p + 2 * k));
+          out.push(s);
+        }
+      }
+      return out;
+    };
+
+    while (pos + 8 <= total) {
+      const type = u16(b, pos), size = u32(b, pos + 4);
+      if (size < 8 || pos + size > b.length) break;
+      if (type === 0x0001) strings = readStrings(pos);
+      else if (type === 0x0102) { // START_ELEMENT
+        const nameIdx = u32(b, pos + 20);
+        const attrStart = u16(b, pos + 24), attrSize = u16(b, pos + 26), attrCount = u16(b, pos + 28);
+        const elem = strings[nameIdx] || '';
+        if (elem === 'manifest') sawManifest = true;
+        for (let i = 0; i < attrCount && i < 200; i++) {
+          const a = pos + 16 + attrStart + i * (attrSize || 20);
+          if (a + 20 > b.length) break;
+          const attrName = strings[u32(b, a + 4)] || '';
+          const rawIdx = u32(b, a + 8);
+          const dataType = b[a + 15];
+          const value = rawIdx !== 0xffffffff ? strings[rawIdx] : (dataType === 0x03 ? strings[u32(b, a + 16)] : undefined);
+          if (typeof value !== 'string') continue;
+          if (elem === 'manifest' && attrName === 'package') pkg = value;
+          else if (elem === 'uses-permission' || elem === 'uses-permission-sdk-23') { if (attrName === 'name') perms.add(value); }
+          else if (attrName === 'permission' && /^[A-Za-z0-9_.]+$/.test(value)) perms.add(value);
+        }
+      }
+      pos += size;
+    }
+    // Tanpa string pool dan elemen <manifest> berarti bukan AXML yang valid (atau sengaja dirusak).
+    if (strings.length === 0 || !sawManifest) return null;
+    return { package: pkg, permissions: Array.from(perms) };
+  }
+
+  /** Membaca paket + izin dari APK. null bila manifest tidak bisa dibaca (dilaporkan sebagai belum lengkap, bukan aman). */
+  async function readApkInfo(bytes, entries) {
+    const entry = entries.find((e) => e.name.toLowerCase() === 'androidmanifest.xml');
+    if (!entry) return null;
+    const manifest = await readZipEntry(bytes, entry, MAX_MANIFEST_BYTES);
+    return manifest ? parseAxml(manifest) : null;
+  }
+
   // ---------------------------------------------------------------- hash
 
   async function sha256Hex(buffer) {
@@ -215,6 +332,7 @@
   async function analyzeBytes(bytes, cfg = {}) {
     let type = detectType(bytes.subarray(0, 4096));
     const flags = {};
+    let apk = null;
     const text = () => latin1(bytes.subarray(0, Math.min(bytes.length, SCAN_TEXT_BYTES)));
 
     if (type === 'zip') {
@@ -225,6 +343,10 @@
         const sum = summarizeZip(z.entries, cfg);
         type = sum.type;
         Object.assign(flags, sum.flags);
+        if (type === 'apk') {
+          const info = await readApkInfo(bytes, z.entries).catch(() => null);
+          if (info) apk = info; else flags.apk_unreadable = true;
+        }
       }
     } else if (type === 'pdf') Object.assign(flags, scanPdf(text()));
     else if (type === 'html') Object.assign(flags, scanHtml(text(), false));
@@ -232,7 +354,7 @@
     else if (type === 'rtf') Object.assign(flags, scanRtf(text()));
     else if (type === 'ole') Object.assign(flags, scanOle(bytes));
 
-    return { detected_type: type, flags };
+    return { detected_type: type, flags, apk };
   }
 
   /**
@@ -252,6 +374,10 @@
       const analysis = await analyzeBytes(new Uint8Array(buffer), cfg);
       result.detected_type = analysis.detected_type;
       result.flags = analysis.flags;
+      if (analysis.apk) {
+        result.apk_package = analysis.apk.package;
+        result.apk_permissions = analysis.apk.permissions.slice(0, 150);
+      }
       result.content_scanned = true;
     } catch {
       result.content_scanned = false; // gagal membaca: dilaporkan sebagai pemeriksaan belum lengkap, bukan aman
@@ -259,5 +385,5 @@
     return result;
   }
 
-  return { inspect, analyzeBytes, detectType, readZipEntries, summarizeZip, scanPdf, scanHtml, scanRtf, scanOle, sha256Hex };
+  return { inspect, analyzeBytes, parseAxml, detectType, readZipEntries, summarizeZip, scanPdf, scanHtml, scanRtf, scanOle, sha256Hex };
 });

@@ -13,7 +13,6 @@
   const $ = (id) => document.getElementById(id);
   const input = $('bedahInput');
   const runBtn = $('bedahRun');
-  const sampleBtn = $('bedahSample');
   const aiToggle = $('bedahAiToggle');
   const statusEl = $('bedahAiOut');
   const levelEl = $('bedahLevel');
@@ -45,12 +44,12 @@
       re: /(segera|sekarang juga|hari ini juga|buruan|batas waktu|dalam \d+ ?(jam|menit)|mendesak|kadaluarsa)/i },
     { id: 'kerahasiaan', weight: 15, why: 'Penipu tidak mau kamu bertanya ke orang lain yang bisa menyadarkanmu.',
       re: /(jangan (bilang|kasih tahu|beritahu|cerita)|rahasiakan|jangan sampai (ada yang )?tahu)/i },
-    { id: 'uang', weight: 20, why: 'Kamu diminta mengeluarkan uang di depan. Ini tanda umum penipuan.',
-      re: /(transfer(kan)? (dulu|dana|uang|sejumlah)|kirim (uang|dana|dulu)|top ?up|biaya (admin|administrasi|pendaftaran)|bayar (dulu|di muka|admin|biaya)|setor(kan)? |deposit|isi (pulsa|saldo))/i },
+    { id: 'uang', weight: 20, skipOffer: true, why: 'Kamu diminta mengeluarkan uang di depan. Ini tanda umum penipuan.',
+      re: /(\b(?:tf|trf|transfer|kirim|setor|bayar|top ?up)\w*(?:\s*(?:kan|in)\b)?(?:\s+(?:aku|saya|gue|gw|ku))?\s+(?:dulu\s+)?(?:uang|duit|dana|saldo|pulsa|sejumlah|rp\.?\s*\d|\d[\d.,]{3,}|\d[\d.,]*\s*(?:rb|ribu|jt|juta|k)\b|ke\s+(?:rek(?:ening)?|norek|no\.?\s*rek|nomor\s+rekening|dana|ovo|gopay|shopeepay|bca|bri|bni|mandiri)\b)|\b(?:tf|trf|transfer|bayar)\w*(?:\s*(?:kan|in)\b)?(?:\s+(?:aku|saya|gue|gw|ku))?\s+dulu\b|\b(?:scan|pindai|tf|trf|transfer|kirim|bayar)\w*\b[^.!?\n]{0,40}\bqris\b|biaya\s+(?:admin|administrasi|pendaftaran)|\btop ?up\b|\bdeposit\b|\bisi\s+(?:pulsa|saldo)\b)/i },
     { id: 'kode', weight: 30, why: 'Kode OTP dan PIN tidak pernah boleh dibagikan, bahkan ke petugas bank.',
       re: /(\botp\b|kode (verifikasi|otp|rahasia|sms|login)|\bpin\b|password|kata sandi|\bcvv\b)/i },
     { id: 'iming', weight: 20, why: 'Imbalan atau hadiah yang mencolok tanpa usaha hampir selalu jebakan.',
-      re: /(hadiah|anda menang|kamu menang|undian|passive income|untung besar|(?:ku|aku|saya|gue|gw) bayar\w*\s+(?:rp\.?\s*)?\d[\d.,]*\s*(?:rb|ribu|jt|juta|k)\b|gaji\s+(?:rp\.?\s*)?\d)/i },
+      re: /(hadiah|anda menang|kamu menang|undian|passive income|untung besar|(?:ku|aku|saya|gue|gw)\s+(?:bayar|tf|trf|transfer|kirim|kasih|kasi)\w*\s+(?:rp\.?\s*)?\d[\d.,]*\s*(?:rb|ribu|jt|juta|k)\b|gaji\s+(?:rp\.?\s*)?\d)/i },
     { id: 'pihak_resmi', weight: 15, why: 'Pelaku sering mengaku dari instansi supaya terlihat meyakinkan.',
       re: /(\bbank\b|\bojk\b|polisi|kejaksaan|bea cukai|kurir|\bpln\b|\bbpjs\b|customer service|petugas)/i },
     { id: 'ancaman', weight: 20, why: 'Ancaman dipakai supaya kamu panik dan menuruti permintaan.',
@@ -77,9 +76,6 @@
     'Kalau ragu, tanyakan langsung ke pengirimnya lewat jalur lain (telepon atau bertemu).',
     'Jangan klik tautan, unduh aplikasi, atau kirim kode dan uang kalau diminta.',
   ];
-
-  const SAMPLE = '[CONTOH FIKTIF] Selamat! Nomor kamu terpilih dapat hadiah Rp10 juta dari Bank Contoh. '
-    + 'Segera klik http://bank-contoh-hadiah.xyz dalam 1 jam dan kirim kode OTP yang masuk. Jangan kasih tahu siapa-siapa ya.';
 
   const LEVEL_COLORS = {
     'Belum terdeteksi': '#16a34a',
@@ -109,14 +105,26 @@
     return { score, level: levelOf(score), gated: false, derived };
   }
 
+  const OFFER_BEFORE = /\b(?:aku|ku|saya|gue|gw)\s+(?:yang\s+|akan\s+|mau\s+|bakal\s+)?$/i;
+
+  function firstMatch(rule, text) {
+    const flags = rule.re.flags.includes('g') ? rule.re.flags : rule.re.flags + 'g';
+    const re = new RegExp(rule.re.source, flags);
+    for (const m of text.matchAll(re)) {
+      if (rule.skipOffer && OFFER_BEFORE.test(text.slice(Math.max(0, m.index - 18), m.index))) continue;
+      return m[0];
+    }
+    return null;
+  }
+
   function analyzeLocal(text) {
     const indikator = [];
     const ids = [];
     for (const r of RULES) {
-      const m = text.match(r.re);
-      if (!m) continue;
+      const hit = firstMatch(r, text);
+      if (!hit) continue;
       ids.push(r.id);
-      indikator.push({ id: r.id, judul: TITLES[r.id], bukti: m[0].trim().slice(0, 80), penjelasan: r.why });
+      indikator.push({ id: r.id, judul: TITLES[r.id], bukti: hit.trim().slice(0, 80), penjelasan: r.why });
     }
 
     const ev = evaluate(ids);
@@ -274,8 +282,4 @@
   }
 
   runBtn.addEventListener('click', run);
-  sampleBtn.addEventListener('click', () => {
-    input.value = SAMPLE;
-    input.focus();
-  });
 })();

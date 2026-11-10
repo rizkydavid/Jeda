@@ -162,3 +162,11 @@
   .nav-backdrop,
   .nav-toggle__bar { transition-duration: .01ms !important; }
 }
+/* Perbaikan layar HP: drawer menu yang disembunyikan di luar layar (kanan) membuat
+   Chrome Android melebarkan viewport (mis. 360px jadi 685px), sehingga layar intro
+   (position: fixed) ikut melebar dan isinya tampak bergeser ke kanan-bawah.
+   Dengan overflow-x: clip, bagian yang keluar layar tidak lagi dihitung. */
+@media (max-width: 900px) {
+  html { overflow-x: hidden; overflow-x: clip; } /* hidden = cadangan untuk browser lama */
+  body { overflow-x: clip; }
+}
