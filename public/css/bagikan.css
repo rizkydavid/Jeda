@@ -1,0 +1,109 @@
+/*
+ * Halaman Bagikan (/bagikan): mode ortu.
+ * Dibuat besar dan sederhana: huruf besar, tombol tinggi, satu keputusan per layar.
+ * Warna banner memakai !important karena aturan kontras tema gelap di style.css
+ * (":root[data-theme=dark] .page-content p/h2 {color: var(--ink)}") akan membuat teks di atas
+ * latar kuning atau oranye tidak terbaca.
+ */
+
+.bg [hidden] { display: none !important; }
+.wrap.bg { max-width: 760px; font-size: 18px; }
+.bg h1 { font-size: clamp(30px, 8vw, 46px); margin-bottom: 10px; }
+.bg .hero { padding-bottom: 20px; }
+.bg .small { font-size: 14px; }
+.bg .btn { font-size: 18px; min-height: 56px; padding: 14px 22px; display: block; width: 100%; text-align: center; }
+.bg .btn + .btn, .bg .btn + a.btn { margin-top: 12px; }
+.bg .btn.ghost { background: var(--card); color: var(--blue); }
+.bg .btn:disabled { opacity: .6; cursor: not-allowed; transform: none; box-shadow: none; }
+.bg .card { margin-bottom: 18px; }
+
+/* ---------- Isian ---------- */
+.bg-label { display: block; margin: 0 0 8px; font-weight: 700; }
+.bg textarea.bg-input,
+.bg input.bg-input {
+    display: block;
+    width: 100%;
+    padding: 14px 16px;
+    border: 2px solid var(--line);
+    border-radius: 14px;
+    background: var(--card);
+    color: var(--ink);
+    font: inherit;
+    font-size: 18px;
+    margin: 0;
+}
+.bg textarea.bg-input { min-height: 150px; resize: vertical; margin-bottom: 14px; }
+.bg .bg-input:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+.bg-aksi { margin-top: 4px; }
+
+/* ---------- Hasil ---------- */
+.bg-banner {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    padding: 22px 20px;
+    border-radius: 20px;
+    border: 2px solid transparent;
+    margin-bottom: 16px;
+}
+.bg-banner:focus { outline: 3px solid var(--blue); outline-offset: 3px; }
+.bg-ikon {
+    flex: none;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 1;
+    background: rgba(255, 255, 255, .28);
+}
+.bg-banner .bg-judul { margin: 0 0 6px; font-size: clamp(22px, 6vw, 30px); font-weight: 800; line-height: 1.15; letter-spacing: -.01em; }
+.bg-banner .bg-ringkas { margin: 0; font-size: 18px; font-weight: 600; }
+
+.bg-banner.is-high { background: #c62d24; border-color: #c62d24; }
+.bg-banner.is-high, .bg-banner.is-high * { color: #fff !important; }
+.bg-banner.is-mid { background: #f59f00; border-color: #f59f00; }
+.bg-banner.is-low { background: #ffd43b; border-color: #ffd43b; }
+.bg-banner.is-mid, .bg-banner.is-mid *,
+.bg-banner.is-low, .bg-banner.is-low * { color: #1b1300 !important; }
+.bg-banner.is-none { background: var(--soft); border-color: var(--line); }
+.bg-banner.is-none, .bg-banner.is-none * { color: var(--ink) !important; }
+.bg-banner.is-high .bg-ikon { background: rgba(255, 255, 255, .25); }
+.bg-banner.is-mid .bg-ikon, .bg-banner.is-low .bg-ikon { background: rgba(27, 19, 0, .14); }
+.bg-banner.is-none .bg-ikon { background: var(--card); }
+
+.bg-hasil h3 { margin: 18px 0 8px; font-size: 18px; }
+.bg-hasil ul, .bg-hasil ol { margin: 0; padding-left: 22px; }
+.bg-hasil li + li { margin-top: 10px; }
+.bg-hasil li .small { display: block; margin-top: 2px; }
+.bg-hasil .bg-bukti { word-break: break-word; }
+
+/* ---------- Hasil periksa tautan ---------- */
+.bg-tautan-daftar { display: grid; gap: 10px; margin-top: 8px; }
+.bg-tautan-hasil { margin-top: 12px; }
+.bg-kotak {
+    padding: 16px 18px;
+    border-radius: 16px;
+    border: 2px solid var(--line);
+    background: var(--card);
+}
+.bg-kotak p { margin: 0 0 6px; }
+.bg-kotak ul { margin: 6px 0 0; padding-left: 20px; }
+.bg-kotak.is-high { border-color: #c62d24; }
+.bg-kotak.is-mid { border-color: #f59f00; }
+.bg-kotak.is-low { border-color: #e0b400; }
+.bg-kotak .bg-kotak__judul { font-weight: 800; font-size: 18px; }
+.bg-host { word-break: break-all; font-weight: 700; }
+
+/* ---------- Pengaturan kontak, konfirmasi, pasang ---------- */
+.bg-konfirmasi { border-color: var(--blue); }
+.bg-konfirmasi .bg-nomor { font-size: 22px; font-weight: 800; margin: 6px 0 14px; word-break: break-all; }
+.bg details.bg-pengaturan { margin-bottom: 18px; }
+.bg details.bg-pengaturan summary { cursor: pointer; font-weight: 700; color: var(--blue); padding: 8px 0; }
+.bg details.bg-pengaturan summary:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; border-radius: 6px; }
+.bg .bg-pengaturan .bg-input + .bg-label { margin-top: 14px; }
+.bg-status { margin: 10px 0 0; font-weight: 600; }
+.bg .bg-catatan { margin: 14px 0 0; color: var(--mut); font-size: 14px; }
+.bg-pasang ol { margin: 10px 0 0; padding-left: 22px; }
