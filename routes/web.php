@@ -9,6 +9,8 @@ use App\Http\Controllers\LatihanController;
 use App\Http\Controllers\ProgresController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\RecoveryController;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+use Illuminate\Routing\RedirectController;
 
 /*
 |--------------------------------------------------------------------------
@@ -21,11 +23,11 @@ Route::view('/latihan', 'pages.simulasi')->name('simulasi');
 Route::view('/jam-emas', 'pages.jam-emas')->name('jam-emas');
 Route::view('/keluarga', 'pages.keluarga')->name('keluarga');
 
+Route::view('/bagikan', 'pages.bagikan')->name('bagikan');
 Route::post('/bagikan', RedirectController::class)
     ->defaults('destination', '/bagikan')
     ->defaults('status', 303)
     ->withoutMiddleware([ValidateCsrfToken::class]);
-
 /*
 |--------------------------------------------------------------------------
 | API internal (simpan hasil & progres)
