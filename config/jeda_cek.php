@@ -47,6 +47,26 @@ return [
         'co.uk', 'org.uk', 'com.au', 'co.jp', 'co.in', 'com.br', 'com.sg', 'com.my',
     ],
 
+    // Layanan hosting/pembuat situs gratis: siapa saja bisa membuat halaman di subdomainnya, jadi domain utamanya
+    // dihitung termasuk satu label di depannya (mis. bca-login.pages.dev, bukan pages.dev). Umur domain RDAP
+    // tidak dipakai untuk alamat seperti ini karena yang tua adalah penyedianya, bukan halamannya.
+    'free_hosting_suffixes' => [
+        'pages.dev', 'workers.dev', 'github.io', 'gitlab.io', 'vercel.app', 'netlify.app', 'web.app', 'firebaseapp.com',
+        'blogspot.com', 'weebly.com', 'wixsite.com', 'webflow.io', 'myshopify.com', 'herokuapp.com', 'onrender.com',
+        'glitch.me', 'repl.co', 'replit.app', 'surge.sh', 'carrd.co', 'godaddysites.com', 'wordpress.com',
+        'ngrok.io', 'ngrok-free.app', 'trycloudflare.com', 'duckdns.org', 'infinityfreeapp.com', '000webhostapp.com',
+        'azurewebsites.net', 'framer.app', 'canva.site', 'notion.site', 'typedream.app',
+    ],
+
+    // Host milik merek resmi yang ISINYA bisa dibuat siapa saja (berbagi dokumen, formulir, penyimpanan) atau yang
+    // hanya mengalihkan ke tujuan lain. Domainnya resmi, tetapi itu TIDAK membuktikan isinya aman, jadi tautan ke
+    // host ini tetap dilacak dan halamannya tetap dibaca. Dicocokkan ke nama host persis atau subdomainnya.
+    'shared_platform_hosts' => [
+        'docs.google.com', 'drive.google.com', 'sites.google.com', 'script.google.com', 'sheets.google.com',
+        'storage.googleapis.com', 'firebasestorage.googleapis.com', 'googleusercontent.com',
+        'wa.me', 'fb.me', 'fb.com', 'youtu.be', 'l.facebook.com', 'lm.facebook.com', 'l.instagram.com',
+    ],
+
     // Akhiran yang sering dipakai situs sekali pakai. Bobot kecil karena banyak yang sah.
     'suspicious_tlds' => [
         'xyz', 'top', 'click', 'icu', 'buzz', 'cfd', 'sbs', 'monster', 'rest',

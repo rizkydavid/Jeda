@@ -37,9 +37,27 @@
     return odd / head.length < 0.05;
   }
 
+  /**
+   * Awalan "MZ" saja tidak cukup: teks biasa yang kebetulan diawali "MZ" bukan program.
+   * Program Windows memiliki penunjuk (e_lfanew di offset 0x3C) ke tanda "PE\0\0". Program DOS lama tidak punya
+   * tanda itu, tetapi isinya biner. Jadi: tanda PE valid => program; tampak seperti teks => bukan program;
+   * selain itu (biner berawalan MZ) tetap dianggap program agar penyamaran tidak lolos.
+   */
+  function looksLikePe(head) {
+    if (head.length >= 0x40) {
+      const lfanew = u32(head, 0x3c);
+      if (lfanew >= 0x40 && lfanew + 4 <= head.length) {
+        if (startsWith(head, [0x50, 0x45, 0x00, 0x00], lfanew)) return true;
+      } else if (lfanew >= 0x40 && lfanew < 0x100000) {
+        return true; // penunjuk wajar tetapi di luar byte awal yang dibaca (stub DOS panjang)
+      }
+    }
+    return !looksLikeText(head.subarray(0, Math.min(head.length, 512)));
+  }
+
   /** @returns {string} salah satu nilai config('jeda_cek.file_types') kecuali zip yang dirinci lewat inspectZip */
   function detectType(head) {
-    if (head.length >= 2 && startsWith(head, [0x4d, 0x5a])) return 'pe';
+    if (head.length >= 2 && startsWith(head, [0x4d, 0x5a]) && looksLikePe(head)) return 'pe';
     if (startsWith(head, [0x7f, 0x45, 0x4c, 0x46])) return 'elf';
     if (startsWith(head, [0xcf, 0xfa, 0xed, 0xfe]) || startsWith(head, [0xfe, 0xed, 0xfa, 0xcf]) || startsWith(head, [0xce, 0xfa, 0xed, 0xfe]) || startsWith(head, [0xfe, 0xed, 0xfa, 0xce])) return 'macho';
     if (startsWith(head, [0xca, 0xfe, 0xba, 0xbe])) {

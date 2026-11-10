@@ -49,6 +49,45 @@ class UrlHeuristicsTest extends TestCase
         $this->assertSame(['official_domain'], $this->ids('https://www.youtube.com/watch?v=1'));
     }
 
+    public function test_layanan_berbagi_konten_resmi_tidak_dianggap_aman(): void
+    {
+        // Domainnya milik merek resmi, tetapi isinya bisa dibuat siapa saja.
+        $this->assertContains('shared_platform', $this->ids('https://docs.google.com/forms/d/e/abc/viewform'));
+        $this->assertNotContains('official_domain', $this->ids('https://docs.google.com/forms/d/e/abc/viewform'));
+        $this->assertContains('shared_platform', $this->ids('https://storage.googleapis.com/bucket/file.html'));
+        $this->assertContains('shared_platform', $this->ids('https://wa.me/628123456789'));
+        $this->assertContains('shared_platform', $this->ids('https://fb.me/abc'));
+
+        // Nama merek lain di path halaman layanan berbagi.
+        $ids = $this->ids('https://sites.google.com/view/klikbca-resmi');
+        $this->assertContains('shared_platform', $ids);
+        $this->assertContains('brand_in_path', $ids);
+
+        // Nama pemilik layanan sendiri tidak dihitung, begitu pula kode pendek satu segmen.
+        $this->assertNotContains('brand_in_path', $this->ids('https://sites.google.com/view/google-tugas'));
+        $this->assertNotContains('brand_in_path', $this->ids('https://youtu.be/dQw4w9WgXcQ'));
+
+        // Domain resmi biasa tidak berubah.
+        $this->assertSame(['official_domain'], $this->ids('https://www.youtube.com/watch?v=1'));
+        $this->assertSame(['official_domain'], $this->ids('https://www.googleapis.com/x'));
+    }
+
+    public function test_hosting_gratis_dihitung_per_subdomain(): void
+    {
+        $h = new UrlHeuristics;
+        $this->assertSame('bca-login.pages.dev', $h->registrableOf('bca-login.pages.dev'));
+        $this->assertSame('toko.github.io', $h->registrableOf('www.toko.github.io'));
+        $this->assertSame('pages.dev', $h->registrableOf('pages.dev'));
+
+        $this->assertTrue($h->isFreeHosting('toko-baru.pages.dev'));
+        $this->assertFalse($h->isFreeHosting('pages.dev'));
+        $this->assertFalse($h->isFreeHosting('toko-baru.com'));
+
+        $this->assertContains('free_hosting', $this->ids('https://toko-baru.vercel.app'));
+        $this->assertNotContains('free_hosting', $this->ids('https://toko-baru.com'));
+        $this->assertContains('brand_lookalike', $this->ids('https://bca-login.pages.dev'));
+    }
+
     public function test_tiruan_merek(): void
     {
         $this->assertContains('brand_lookalike', $this->ids('https://bca-login.xyz'));

@@ -18,12 +18,17 @@
     return node;
   }
 
+  const REQUEST_TIMEOUT_MS = 50000; // server bisa memakai belasan detik untuk melacak tautan dan menghubungi layanan luar
+
   async function postJson(url, payload) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     let response;
     try {
       response = await fetch(url, {
         method: 'POST',
         credentials: 'same-origin',
+        signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -32,8 +37,13 @@
         },
         body: JSON.stringify(payload),
       });
-    } catch {
+    } catch (error) {
+      if (error && error.name === 'AbortError') {
+        throw new Error('Pemeriksaan terlalu lama. Layanan luar mungkin sedang lambat, jadi coba lagi sebentar lagi.');
+      }
       throw new Error('Tidak dapat terhubung ke server. Periksa koneksi internetmu.');
+    } finally {
+      clearTimeout(timer);
     }
     const body = await response.json().catch(() => ({}));
     if (response.status === 429) throw new Error('Terlalu banyak pemeriksaan dalam waktu singkat. Tunggu sebentar lalu coba lagi.');
@@ -63,13 +73,14 @@
       : r.level === 'Sedang' ? 'Hati-hati sebelum membuka tautan ini'
       : r.level === 'Rendah' ? 'Ada tanda kecil, cek ulang dulu'
       : incomplete ? 'Belum ada tanda bahaya, tetapi pemeriksaan belum lengkap'
-      : r.official_brand ? `Alamat cocok dengan situs resmi ${r.official_brand}`
+      : r.official_shared ? `Domain milik ${r.official_brand}, tetapi isinya bisa dibuat siapa saja`
+      : r.official_brand ? `Domain cocok dengan situs resmi ${r.official_brand}`
       : 'Tidak ada tanda bahaya yang terdeteksi';
 
     const reasons = signals.filter((x) => x.points > 0).sort((a, b) => b.points - a.points).slice(0, 3).map((x) => x.label);
 
     const passed = [];
-    if (r.official_brand) passed.push(`Domain cocok dengan situs resmi ${r.official_brand}.`);
+    if (r.official_brand && !r.official_shared) passed.push(`Domain cocok dengan situs resmi ${r.official_brand}. Pastikan ini memang alamat yang kamu tuju.`);
     if (!hasGroup('url_pattern', 'keyword')) passed.push('Alamat tidak memakai trik yang lazim dipakai penipu (domain tiruan, kata pancingan, karakter menyamar).');
     if (checks.safe_browsing?.state === 'ok' && checks.safe_browsing.result === 'clean') passed.push('Tidak ada di daftar situs berbahaya Google Safe Browsing.');
     if (checks.virustotal?.state === 'ok' && checks.virustotal.result === 'clean') passed.push(checks.virustotal.note);
@@ -102,6 +113,10 @@
       'Hasil ini bukan jaminan aman. Tetap waspada kalau halaman meminta kata sandi, OTP, atau transfer.',
       'Untuk bank dan e-wallet, selalu buka lewat aplikasi atau alamat resmi yang kamu ketik sendiri.',
     ];
+
+    if (r.official_shared) {
+      steps.unshift('Alamat ini ada di layanan berbagi konten. Buka hanya kalau kamu kenal pengirimnya, dan jangan isi kata sandi, OTP, atau data kartu di halaman itu.');
+    }
 
     return { headline, reasons, passed: [...new Set(passed.filter(Boolean))], unchecked, steps, hosts };
   }

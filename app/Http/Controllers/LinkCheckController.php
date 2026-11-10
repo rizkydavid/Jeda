@@ -22,6 +22,9 @@ class LinkCheckController extends Controller
 
     public function check(CheckLinkRequest $request, LinkAnalysisService $analysis, GeminiExplanationService $gemini): JsonResponse
     {
+        // Pelacakan redirect dan tiga layanan luar bisa memakan belasan detik pada koneksi lambat.
+        @set_time_limit(60);
+
         $result = $analysis->analyze(
             $request->validated('url'),
             $request->boolean('submit_to_virustotal'),
@@ -81,6 +84,7 @@ class LinkCheckController extends Controller
             'final_hostname' => $result['final_hostname'],
             'redirect_hosts' => $result['redirect_hosts'],
             'official_brand' => $result['official_brand'],
+            'official_shared' => $result['official_shared'],
             'score' => $result['score'],
             'level' => $result['level'],
             'confirmed' => $result['confirmed'],

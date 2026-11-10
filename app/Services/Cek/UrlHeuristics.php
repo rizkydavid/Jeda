@@ -94,6 +94,10 @@ final class UrlHeuristics
         $host = $p['host'];
         $note = $where ? " (pada $where)" : '';
         $official = $p['is_ip'] ? null : $this->matchOfficial($p['registrable']);
+        if ($official !== null && $this->isSharedPlatform($host)) {
+            $official['shared'] = true;
+        }
+        $shared = $official !== null && ! empty($official['shared']);
 
         if ($p['has_userinfo']) {
             $signals[] = new Signal('userinfo_at', 'url_pattern', 'Ada tanda @ di alamat',
@@ -110,7 +114,17 @@ final class UrlHeuristics
                 'Huruf yang tampak mirip bisa dipakai untuk menyamar sebagai merek lain.'.$note, 3);
         }
 
-        if ($official !== null) {
+        if ($shared) {
+            $signals[] = new Signal('shared_platform', 'info', 'Layanan berbagi konten milik '.$official['brand'],
+                "$host milik {$official['brand']}, tetapi isinya (dokumen, formulir, halaman, atau tujuan pengalihan) bisa dibuat siapa saja. Domain resmi tidak membuktikan isinya aman.".$note, 0);
+            $owner = $official['brand'];
+            // Path satu segmen (wa.me/…, youtu.be/…) hanyalah kode pendek, bukan nama halaman; tidak dinilai.
+            $pathBrand = substr_count(trim($p['path'], '/'), '/') >= 1 ? $this->brandInPath($p['path'], $owner) : null;
+            if ($pathBrand !== null) {
+                $signals[] = new Signal('brand_in_path', 'url_pattern', 'Nama '.$pathBrand.' muncul di halaman layanan berbagi',
+                    "Nama $pathBrand ada di alamat halaman, padahal alamat ini ada di layanan berbagi milik $owner, bukan milik $pathBrand. Penipu sering memakai cara ini.".$note, 3);
+            }
+        } elseif ($official !== null) {
             $signals[] = new Signal('official_domain', 'info', 'Cocok dengan domain resmi '.$official['brand'],
                 $official['domain'].' ada di daftar domain resmi Jeda. Tetap pastikan alamatnya memang yang kamu tuju.'.$note, 0);
         } elseif (! $p['is_ip']) {
@@ -119,6 +133,11 @@ final class UrlHeuristics
                 $signals[] = new Signal('brand_lookalike', 'url_pattern', 'Mirip nama '.$brand,
                     "Nama $brand muncul di alamat ini, tetapi domain utamanya ({$p['registrable']}) bukan domain resmi yang kami kenal.$note", 4);
             }
+        }
+
+        if (! $p['is_ip'] && $this->isFreeHosting($host)) {
+            $signals[] = new Signal('free_hosting', 'url_pattern', 'Situs di layanan hosting gratis',
+                'Siapa saja bisa membuat halaman di layanan ini tanpa verifikasi, jadi nama domainnya tidak membuktikan siapa pemilik halamannya.'.$note, 1);
         }
 
         if (in_array($p['registrable'], config('jeda_cek.shorteners'), true)) {
@@ -132,19 +151,22 @@ final class UrlHeuristics
                 'Akhiran ini murah dan sering dipakai situs sekali pakai, walau tidak semuanya berbahaya.'.$note, 1);
         }
 
+        if ($official === null && ! $p['is_ip']
+            && preg_match('/(login|verify|verifikasi|secure|hadiah|claim|gift|bonus|otp|undian|cashback|promo|akun|konfirmasi)/i', $host) === 1) {
+            $signals[] = new Signal('bait_words', 'keyword', 'Kata pancingan pada domain',
+                'Kata seperti login atau hadiah sering dipakai untuk memancing klik, tetapi juga dipakai situs sah. Dihitung hanya jika ada tanda lain.'.$note,
+                1, needsOther: true);
+        }
+
+        // Kata pancingan di path berlaku juga untuk layanan berbagi konten (mis. sites.google.com/view/bca-login).
+        if (($official === null || $shared) && ! $p['is_ip']
+            && preg_match('/(login|signin|verify|verifikasi|otp|password|konfirmasi|akun|secure|update)/i', $p['path'].' '.($p['query'] ?? '')) === 1) {
+            $signals[] = new Signal('bait_path', 'keyword', 'Kata pancingan pada alamat halaman',
+                'Alamat halaman memuat kata seperti login atau verifikasi. Dihitung hanya jika ada tanda lain.'.$note,
+                1, needsOther: true);
+        }
+
         if ($official === null && ! $p['is_ip']) {
-            if (preg_match('/(login|verify|verifikasi|secure|hadiah|claim|gift|bonus|otp|undian|cashback|promo|akun|konfirmasi)/i', $host) === 1) {
-                $signals[] = new Signal('bait_words', 'keyword', 'Kata pancingan pada domain',
-                    'Kata seperti login atau hadiah sering dipakai untuk memancing klik, tetapi juga dipakai situs sah. Dihitung hanya jika ada tanda lain.'.$note,
-                    1, needsOther: true);
-            }
-
-            if (preg_match('/(login|signin|verify|verifikasi|otp|password|konfirmasi|akun|secure|update)/i', $p['path'].' '.($p['query'] ?? '')) === 1) {
-                $signals[] = new Signal('bait_path', 'keyword', 'Kata pancingan pada alamat halaman',
-                    'Alamat halaman memuat kata seperti login atau verifikasi. Dihitung hanya jika ada tanda lain.'.$note,
-                    1, needsOther: true);
-            }
-
             if (substr_count($host, '.') >= 3) {
                 $signals[] = new Signal('deep_subdomain', 'url_pattern', 'Subdomain bertingkat',
                     'Periksa domain utamanya, yaitu bagian tepat sebelum akhiran: '.$p['registrable'].'.'.$note, 1);
@@ -196,11 +218,68 @@ final class UrlHeuristics
             return $host;
         }
         $lastTwo = implode('.', array_slice($labels, -2));
-        if (in_array($lastTwo, config('jeda_cek.second_level_suffixes'), true)) {
+        if (in_array($lastTwo, config('jeda_cek.second_level_suffixes'), true)
+            || in_array($lastTwo, config('jeda_cek.free_hosting_suffixes', []), true)) {
             return implode('.', array_slice($labels, -3));
         }
 
         return $lastTwo;
+    }
+
+    /** Host di layanan hosting/pembuat situs gratis (bukan penyedianya sendiri). */
+    public function isFreeHosting(string $host): bool
+    {
+        foreach (config('jeda_cek.free_hosting_suffixes', []) as $suffix) {
+            if (str_ends_with($host, '.'.$suffix)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** Host resmi yang isinya bisa dibuat siapa saja atau yang hanya mengalihkan (lihat config shared_platform_hosts). */
+    public function isSharedPlatform(string $host): bool
+    {
+        foreach (config('jeda_cek.shared_platform_hosts', []) as $shared) {
+            if ($host === $shared || str_ends_with($host, '.'.$shared)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** Dua domain milik merek resmi yang sama (mis. wa.me dan whatsapp.com). */
+    public function sameOfficialBrand(string $registrableA, string $registrableB): bool
+    {
+        $a = $this->matchOfficial($registrableA);
+        $b = $this->matchOfficial($registrableB);
+
+        return $a !== null && $b !== null && $a['brand'] === $b['brand'];
+    }
+
+    /**
+     * Nama merek LAIN (bukan pemilik layanan) di path alamat, mis. sites.google.com/view/bca-resmi.
+     * Cocok per kata utuh; kata kunci panjang (5+ huruf) juga cocok bila ada di dalam kata.
+     */
+    private function brandInPath(string $path, string $ownerBrand): ?string
+    {
+        $tokens = array_filter(preg_split('/[^a-z0-9]+/', strtolower(rawurldecode($path))) ?: []);
+        foreach (config('jeda_cek.brands') as $brand => $cfg) {
+            if ($brand === $ownerBrand) {
+                continue;
+            }
+            foreach ($tokens as $token) {
+                foreach ($cfg['keywords'] as $keyword) {
+                    if ($token === $keyword || (strlen($keyword) >= 5 && str_contains($token, $keyword))) {
+                        return $brand;
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
     /** @return array{brand:string,domain:string}|null */

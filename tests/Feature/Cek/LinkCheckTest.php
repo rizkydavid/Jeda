@@ -41,6 +41,61 @@ class LinkCheckTest extends CekTestCase
         Http::assertNotSent(fn (Request $r) => str_contains($r->url(), 'youtube.com'));
     }
 
+    public function test_formulir_google_tiruan_bank_tetap_dibuka_dan_dibaca(): void
+    {
+        // Data SIMULASI. Domain google.com resmi, tetapi formulirnya dibuat orang lain.
+        $form = '<form action="/kirim" method="post"><input type="text" name="user"><input type="password" name="pass"></form>';
+        $this->fakeServices(['docs.google.com/*' => $this->html('KlikBCA Individual - Login', $form)]);
+
+        $response = $this->check('https://docs.google.com/forms/d/e/abc123/viewform')
+            ->assertOk()
+            ->assertJsonPath('official_brand', 'Google')
+            ->assertJsonPath('official_shared', true)
+            ->assertJsonPath('checks.redirect.state', 'ok')   // TIDAK dilewati
+            ->assertJsonPath('checks.page.state', 'ok');
+
+        $ids = $this->signalIds($response);
+        foreach (['shared_platform', 'password_form', 'brand_in_page_mismatch'] as $expected) {
+            $this->assertContains($expected, $ids, "Sinyal $expected seharusnya ada");
+        }
+        $this->assertNotSame('Belum ada indikator', $response->json('level'));
+        Http::assertSent(fn (Request $r) => str_contains($r->url(), 'docs.google.com'));
+    }
+
+    public function test_pengalih_resmi_ke_domain_merek_yang_sama_tidak_dianggap_domain_lain(): void
+    {
+        $this->fakeServices([
+            'youtu.be/*' => Http::response('', 302, ['Location' => 'https://www.youtube.com/watch?v=abc']),
+            'www.youtube.com/*' => $this->html('Video'),
+        ]);
+
+        $response = $this->check('https://youtu.be/abc')
+            ->assertOk()
+            ->assertJsonPath('official_shared', true)
+            ->assertJsonPath('final_hostname', 'www.youtube.com')
+            ->assertJsonPath('checks.redirect.state', 'ok')
+            ->assertJsonPath('checks.page.state', 'skipped'); // tujuan akhir domain resmi biasa
+
+        $ids = $this->signalIds($response);
+        $this->assertNotContains('redirect_cross_domain', $ids);
+        Http::assertSent(fn (Request $r) => str_contains($r->url(), 'youtu.be'));
+    }
+
+    public function test_situs_hosting_gratis_diberi_tanda_dan_umur_domain_penyedia_tidak_dipakai(): void
+    {
+        $this->fakeServices(['bca-promo.pages.dev/*' => $this->html('Promo')]);
+
+        $response = $this->check('https://bca-promo.pages.dev/')
+            ->assertOk()
+            ->assertJsonPath('checks.domain_age.state', 'skipped');
+
+        $ids = $this->signalIds($response);
+        $this->assertContains('free_hosting', $ids);
+        $this->assertContains('brand_lookalike', $ids);
+        // Umur "pages.dev" milik penyedia tidak boleh dijadikan alasan bahwa halamannya tepercaya.
+        Http::assertNotSent(fn (Request $r) => str_contains($r->url(), 'rdap.org'));
+    }
+
     public function test_phishing_yang_belum_dikenal_google_tetap_terdeteksi_lewat_kombinasi_tanda(): void
     {
         // Data di bawah SIMULASI. Tidak ada situs sungguhan yang dibuka.

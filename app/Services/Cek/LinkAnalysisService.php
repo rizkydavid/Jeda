@@ -41,7 +41,9 @@ final class LinkAnalysisService
         $hosts = [$parsed['host']];
         $trace = null;
 
-        if ($official !== null) {
+        // Domain resmi biasa tidak perlu dibuka. Layanan berbagi konten milik merek resmi (docs.google.com,
+        // sites.google.com, wa.me, dll.) TETAP dilacak dan dibaca: domainnya resmi, isinya bisa dibuat siapa saja.
+        if ($official !== null && empty($official['shared'])) {
             $checks['redirect'] = $this->check('Pengalihan tautan', 'skipped', 'Domain resmi yang dikenal, tidak perlu dibuka.');
             $checks['page'] = $this->check('Isi halaman tujuan', 'skipped', 'Domain resmi yang dikenal, tidak perlu dibuka.');
         } else {
@@ -56,7 +58,7 @@ final class LinkAnalysisService
                 // Tujuan akhir diperiksa dengan aturan yang sama. Id yang sama tidak dihitung dua kali.
                 $finalLocal = $this->heuristics->analyze($finalParsed, 'tujuan akhir: '.$finalParsed['host']);
                 $signals = array_merge($signals, $finalLocal['signals']);
-                $finalIsOfficial = $finalLocal['official'] !== null;
+                $finalIsOfficial = $finalLocal['official'] !== null && empty($finalLocal['official']['shared']);
             }
 
             [$checks['page'], $pageSignals] = $this->pageStep($trace, $finalIsOfficial);
@@ -94,7 +96,9 @@ final class LinkAnalysisService
             // --- 5) RDAP ---------------------------------------------------------------------------------
             $domains = [];
             foreach ([$parsed, $finalParsed] as $candidate) {
-                if ($candidate !== null && ! $candidate['is_ip'] && $this->heuristics->matchOfficial($candidate['registrable']) === null) {
+                if ($candidate !== null && ! $candidate['is_ip']
+                    && $this->heuristics->matchOfficial($candidate['registrable']) === null
+                    && ! $this->heuristics->isFreeHosting($candidate['host'])) {
                     $domains[$candidate['registrable']] = true;
                 }
             }
@@ -110,6 +114,7 @@ final class LinkAnalysisService
             'final_hostname' => $finalParsed['host'] ?? null,
             'redirect_hosts' => $hosts,
             'official_brand' => $official['brand'] ?? null,
+            'official_shared' => ! empty($official['shared']),
             'domain_age_days' => $youngest,
             'checks' => $checks,
         ];
@@ -164,7 +169,9 @@ final class LinkAnalysisService
         }
         if ($trace['status'] === 'ok' && $trace['final_url'] !== null) {
             $finalHost = strtolower((string) parse_url($trace['final_url'], PHP_URL_HOST));
-            if ($count >= 1 && $finalHost !== '' && $this->heuristics->registrableOf($finalHost) !== $parsed['registrable']) {
+            $finalRegistrable = $finalHost !== '' ? $this->heuristics->registrableOf($finalHost) : '';
+            if ($count >= 1 && $finalHost !== '' && $finalRegistrable !== $parsed['registrable']
+                && ! $this->heuristics->sameOfficialBrand($parsed['registrable'], $finalRegistrable)) {
                 $signals[] = new Signal('redirect_cross_domain', 'redirect', 'Tautan dialihkan ke domain lain',
                     "Alamat yang kamu tempel berakhir di $finalHost, domain yang berbeda.", 1);
             }
@@ -266,7 +273,7 @@ final class LinkAnalysisService
     {
         $label = 'Umur domain (RDAP)';
         if ($domains === []) {
-            return [$this->check($label, 'skipped', 'Dilewati (domain resmi atau alamat IP).'), [], null];
+            return [$this->check($label, 'skipped', 'Dilewati (domain resmi, alamat IP, atau situs di layanan hosting gratis, yang umur domainnya tidak menggambarkan halamannya).'), [], null];
         }
 
         $entries = [];
