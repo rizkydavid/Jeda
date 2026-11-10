@@ -1515,6 +1515,9 @@ html, body, .site-header, .page-content, .card, .notice, .q, .check, .opt, .sw, 
 .cek-tabs .chip { display: inline-block; text-decoration: none; color: inherit; cursor: pointer; }
 .cek-tabs .chip.on { color: #fff; }
 .cek-tabs .chip:focus-visible { outline: 3px solid #5368f2; outline-offset: 2px; }
+/* Di desktop kedua kartu (tautan dan file) tampil berdampingan, jadi tombol pindah tidak diperlukan.
+   Tombol hanya muncul saat layout ditumpuk (HP/layar sempit), batasnya sama dengan .grid2 (820px). */
+@media (min-width: 821px) { .hero .cek-tabs { display: none; } }
 #cek-tautan, #hasil-tautan, #cek-file { scroll-margin-top: 88px; }
 .cek-linkrow { justify-content: center; flex-wrap: nowrap; max-width: 720px; margin: 0 auto; }
 .cek-linkrow .jeda-field { flex: 1; min-width: 0; border-radius: 999px; padding: 14px 20px; }
