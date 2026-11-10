@@ -1,22 +1,16 @@
 # Jeda — Edukasi Keamanan Digital
 
-> **Berhenti sejenak, periksa, lalu bertindak dengan lebih aman.**
+> **Ragu? Jeda dulu.** Berhenti sejenak, periksa, lalu bertindak dengan lebih aman.
 
-**Jeda** adalah aplikasi web edukasi keamanan digital untuk membantu orang mengenali penipuan online (phishing, rekayasa sosial, file berbahaya) sebelum terlanjur klik atau transfer. Hasil pemeriksaan selalu disampaikan sebagai **indikator risiko, bukan vonis**.
+**Jeda** adalah aplikasi web edukasi keamanan digital yang membantu orang mengenali penipuan online (phishing, rekayasa sosial, file berbahaya) sebelum terlanjur klik atau transfer. Hasil pemeriksaan selalu disampaikan sebagai **indikator risiko, bukan vonis**.
 
 Aplikasi ini *guest-first*: tidak perlu daftar atau login. Data progres dipisahkan berdasarkan sesi browser.
 
 **Demo langsung:** [jeda.up.railway.app](https://jeda.up.railway.app)
 
-### Ringkasan singkat
-
-- **Masalah:** penipuan digital (phishing, rekayasa sosial, file berbahaya) sering berhasil karena korban terburu-buru dan tidak tahu cara memeriksa.
-- **Solusi:** Jeda mengajak pengguna *berhenti sejenak*, menunjukkan tanda-tanda tekanan atau risiko, lalu memberi langkah aman berikutnya. Hasilnya indikator risiko, bukan vonis.
-- **Pembeda:** pemeriksaan pesan berjalan di browser, isi file tidak pernah diunggah, tidak perlu akun, dan pemeriksaan yang gagal tidak pernah dianggap aman.
-
 <!-- Tambahkan tangkapan layar di sini, contoh:
 ![Beranda](docs/screenshots/beranda.png)
-![Bedah Pesan](docs/screenshots/bedah.png)
+![Cek](docs/screenshots/cek.png)
 ![Latihan](docs/screenshots/latihan.png)
 -->
 
@@ -24,95 +18,113 @@ Aplikasi ini *guest-first*: tidak perlu daftar atau login. Data progres dipisahk
 
 ## Daftar Isi
 
-- [Fitur](#fitur)
+- [Latar Belakang](#latar-belakang)
+- [Fitur Utama](#fitur-utama)
+- [Petunjuk Penggunaan](#petunjuk-penggunaan)
 - [Teknologi](#teknologi)
 - [Struktur Proyek](#struktur-proyek)
-- [Menjalankan Secara Lokal](#menjalankan-secara-lokal)
+- [Cara Menjalankan Aplikasi](#cara-menjalankan-aplikasi)
 - [Konfigurasi `.env`](#konfigurasi-env)
-- [Deploy ke Railway](#deploy-ke-railway)
-- [Endpoint API Internal](#endpoint-api-internal)
-- [Database](#database)
 - [Testing](#testing)
+- [Deploy ke Railway](#deploy-ke-railway)
 - [Privasi dan Keamanan](#privasi-dan-keamanan)
 - [Batasan](#batasan)
+- [Dokumentasi Teknis](#dokumentasi-teknis)
 
 ---
 
-## Fitur
+## Latar Belakang
+
+Penipuan digital sering berhasil karena korban terburu-buru dan tidak tahu cara memeriksa. Jeda mengajak pengguna *berhenti sejenak*, menunjukkan tanda-tanda tekanan atau risiko, lalu memberi langkah aman berikutnya.
+
+**Pembeda Jeda:**
+
+- Pemeriksaan pesan berjalan di browser, teksnya tidak dikirim ke server.
+- Isi file tidak diunggah secara bawaan; hanya ringkasan dan hash SHA-256 yang dikirim.
+- Tidak perlu akun.
+- Pemeriksaan yang gagal tidak pernah dianggap aman, melainkan ditandai **"belum lengkap"**.
+
+---
+
+## Fitur Utama
 
 | Halaman | Route | Deskripsi |
 |---|---|---|
 | Beranda | `/` | Pintu masuk ke semua fitur |
 | Cek | `/cek` | Bedah Pesan, Cek Tautan, dan Cek File |
-| Latihan | `/latihan` | Kuis berlevel dengan sistem EXP |
+| Latihan | `/latihan` | Kuis berlevel dengan sistem EXP dan kode pemulihan |
 | Jam Emas | `/jam-emas` | Rencana tindakan cepat kalau sudah terkena penipuan |
 | Keluarga | `/keluarga` | Perlindungan untuk keluarga, terutama orang tua |
-| Batasan | `/batasan` | Penjelasan jujur tentang apa yang bisa dan tidak bisa dilakukan Jeda |
+| Bagikan | `/bagikan` | Mode orang tua: terima pesan dari menu "Bagikan" HP (PWA) |
 
 ### 1. Bedah Pesan
 
 Menganalisis pesan mencurigakan (WhatsApp, SMS, DM) dalam dua lapis.
 
-**Lapis 1: pemeriksaan lokal (selalu aktif).** Berjalan di browser (`public/js/bedah.js`), teks pesan tidak dikirim ke server. Berbasis aturan dengan skor berbobot 0–100, bukan machine learning. Yang diperiksa:
-
-- Tekanan waktu, permintaan merahasiakan, permintaan uang, permintaan OTP/PIN/data pribadi.
-- Iming-iming hadiah atau pekerjaan, mengaku pihak resmi, ancaman, mengaku kenalan dengan nomor baru.
-- Tautan di dalam pesan: nama merek di subdomain, kata pancingan, IP langsung, pemendek tautan, link file `.apk`.
-- Teks dinormalisasi dulu, jadi variasi seperti `0TP`, `tr4nsfer`, atau `o t p` tetap terdeteksi.
-- Kombinasi pola berbahaya (misalnya uang + tekanan) menambah skor.
-
-Server hanya mencatat skor, daftar id indikator, dan panjang teks.
-
-**Lapis 2: analisis AI (opsional).** Tombol "Kirim ke AI dan analisis" memanggil `POST /jeda/api/bedah-ai`. Nomor HP, rekening, dan email disamarkan di server sebelum dikirim ke penyedia AI, teks tidak disimpan, dan hasilnya diberi label bahwa AI bisa salah. Penyedia yang didukung: **Gemini** dan **Anthropic (Claude)**. Tanpa API key, tombol ini menampilkan pesan bahwa AI belum aktif dan pemeriksaan lokal tetap berfungsi.
+- **Lapis 1, pemeriksaan lokal (selalu aktif).** Berjalan di browser (`public/js/bedah.js`). Berbasis aturan dengan skor berbobot 0–100, bukan machine learning. Mendeteksi tekanan waktu, permintaan merahasiakan, permintaan uang/OTP/PIN/data pribadi, iming-iming hadiah atau pekerjaan, mengaku pihak resmi, ancaman, dan tautan mencurigakan. Teks dinormalisasi dulu, jadi variasi seperti `0TP` atau `tr4nsfer` tetap terdeteksi.
+- **Lapis 2, analisis AI (opsional).** Nomor HP, rekening, dan email disamarkan di server sebelum dikirim ke penyedia AI (**Gemini** atau **Anthropic Claude**). Teks tidak disimpan. Tanpa API key, tombol ini menampilkan "AI belum aktif" dan pemeriksaan lokal tetap berfungsi.
 
 ### 2. Cek Tautan
 
-Pemeriksaan berlapis yang dijalankan server (`app/Services/Cek/LinkAnalysisService.php`):
+Pemeriksaan berlapis di server (`app/Services/Cek/LinkAnalysisService.php`):
 
-1. **Pola alamat** (lokal): TLD mencurigakan, pemendek tautan, tiruan merek (BCA, BRI, Shopee, DANA, dll.), subdomain pengalih.
-2. **Pelacakan pengalihan** (redirect): mengikuti rantai pengalihan dengan batas hop dan waktu.
-3. **Isi halaman tujuan**: mencari tanda form login palsu dan sejenisnya.
-4. **Google Safe Browsing** (opsional).
-5. **VirusTotal** (opsional).
-6. **Umur domain** lewat RDAP.
-7. **Skor akhir** oleh `RiskScorer`, dengan batas bobot per kelompok sinyal supaya satu jenis tanda tidak mendominasi.
+1. Pola alamat: TLD mencurigakan, pemendek tautan, tiruan merek (BCA, BRI, Shopee, DANA, dll.), subdomain pengalih.
+2. Pelacakan pengalihan (redirect) dengan batas hop dan waktu.
+3. Pembacaan isi halaman tujuan untuk tanda form login palsu.
+4. Google Safe Browsing (opsional).
+5. VirusTotal (opsional).
+6. Umur domain lewat RDAP.
+7. Skor akhir oleh `RiskScorer`, dengan batas bobot per kelompok sinyal.
 
-Prinsip pentingnya: pemeriksaan eksternal yang gagal dicatat sebagai **"belum lengkap"** dan **tidak pernah dianggap aman**. Ada juga `NetworkGuard` yang mencegah server dipakai membuka alamat jaringan internal (SSRF), dan alamat internal tidak dikirim ke layanan pihak ketiga.
-
-Penjelasan dalam bahasa awam dibuat terpisah oleh AI (`POST /jeda/api/cek-tautan/penjelasan`). Kalau AI gagal, hasil pemeriksaan utama tidak terpengaruh.
+`NetworkGuard` mencegah server dipakai membuka alamat jaringan internal (SSRF). Penjelasan bahasa awam dibuat terpisah oleh Gemini; jika gagal, hasil utama tidak terpengaruh.
 
 ### 3. Cek File
 
-**Isi file tidak diunggah.** Browser membaca file sendiri (`public/js/file-inspect.js`), lalu hanya mengirim ringkasan dan hash SHA-256 ke server. Server menilai berdasarkan:
+Browser membaca file sendiri (`public/js/file-inspect.js`) lalu hanya mengirim ringkasan dan SHA-256. Server menilai:
 
 - Ekstensi berbahaya (`.exe`, `.apk`, `.scr`, `.js`, dll.) dan ekstensi ganda seperti `laporan.pdf.exe`.
 - Jenis file asli dari byte awal, dibandingkan dengan ekstensinya.
-- Dokumen yang bisa membawa makro.
-- Nama file bernada penipuan (undangan, resi, tilang, dll.), khusus untuk APK/program.
+- Dokumen yang bisa membawa makro, serta izin berbahaya di dalam APK.
+- Nama file bernada penipuan (undangan, resi, tilang, dll.), khusus APK/program.
 - Reputasi hash lewat VirusTotal (opsional).
+
+**Pemindaian antivirus opsional:** satu-satunya jalur yang mengirim isi file ke server, hanya setelah pengguna mencentang izin, lalu diteruskan ke VirusTotal dan tidak disimpan.
 
 ### 4. Latihan
 
-Kuis 10 soal per ronde dengan **10 level**, dari Pemula sampai Puncak Kedamaian (120 soal, 12 per level; tiap ronde mengambil 10 soal acak dari level tersebut).
+Kuis **10 soal per ronde**, **10 level** (Pemula sampai Puncak Kedamaian), 12 soal per level (total 120 soal).
 
-- Level **tidak naik otomatis** setelah satu ronde. Setiap jawaban benar memberi **EXP**, EXP dikumpulkan lintas ronde, dan level naik saat total EXP mencapai batas level berikutnya.
-- EXP per jawaban benar = `6 + 2 x (level - 1)`; ronde 10/10 mendapat bonus +10.
-- Level 2 sampai 10 terbuka pada 100, 250, 450, 700, 1000, 1350, 1750, 2200, dan 2700 EXP. Level yang sudah terbuka bisa dimainkan ulang kapan saja.
-- EXP dihitung di server (`App\Support\QuizProgression`), bukan di browser, dan disimpan di `jeda_quiz_attempts.exp_earned`.
+- Level tidak naik otomatis. Jawaban benar memberi **EXP** yang dikumpulkan lintas ronde.
+- EXP per jawaban benar = `6 + 2 × (level − 1)`; ronde 10/10 mendapat bonus +10.
+- Level 2–10 terbuka pada 100, 250, 450, 700, 1000, 1350, 1750, 2200, dan 2700 EXP.
+- EXP dihitung di server (`App\Support\QuizProgression`).
+- **Kode pemulihan** format `JEDA-XXXX-XXXX-XXXX` sebagai pengganti akun, untuk memindahkan progres ke browser atau perangkat lain. Server hanya menyimpan hash SHA-256 dari kode.
 - Semua angka bisa diubah di `config/jeda_quiz.php`.
 
 ### 5. Jam Emas
 
-Panduan langkah berurutan setelah terkena penipuan: apa yang sudah terjadi, kapan kejadiannya, langkah yang harus dilakukan, ke mana melapor, draf laporan siap salin, dan peringatan soal penipuan kedua.
+Panduan berurutan setelah terkena penipuan: apa yang sudah terjadi, kapan kejadiannya, langkah yang harus dilakukan, ke mana melapor, draf laporan siap salin, dan peringatan soal penipuan kedua. Checklist tersimpan ke database.
 
 ### 6. Keluarga
 
-Pilih siapa yang ingin dilindungi, lalu dapat:
+Pilih siapa yang ingin dilindungi, lalu dapatkan checklist perlindungan, kartu peringatan siap kirim, ide kata sandi keluarga, dan langkah jika sudah terlanjur.
 
-- **Checklist perlindungan** per kelompok (tersimpan ke database).
-- **Kartu peringatan siap kirim.**
-- **Kata sandi keluarga**: pilih dari ide acak atau tulis sendiri.
-- **Kalau sudah terlanjur**: langkah yang perlu dilakukan.
+### 7. Bagikan (PWA)
+
+Jeda bisa dipasang di layar utama HP. Lewat menu "Bagikan" Android, pesan mencurigakan dikirim ke Jeda tanpa disalin manual. Isi kiriman disimpan sementara di cache lokal browser (service worker `public/sw.js`), **tidak dikirim ke server**, dan langsung dihapus setelah dibaca.
+
+---
+
+## Petunjuk Penggunaan
+
+1. **Dapat pesan atau tautan mencurigakan?** Buka `/cek`, pilih tab **Bedah Pesan**, **Cek Tautan**, atau **Cek File**, lalu tempel pesan/tautan atau pilih file. Baca indikator risiko dan langkah aman yang disarankan.
+2. **Mau berlatih?** Buka `/latihan`, pilih level, jawab 10 soal, kumpulkan EXP. Setelah memainkan minimal satu ronde, buat **kode pemulihan** dan simpan di tempat aman.
+3. **Pindah perangkat?** Di `/latihan`, masukkan kode pemulihan untuk memindahkan progres ke sesi baru.
+4. **Sudah terlanjur kena tipu?** Buka `/jam-emas`, ikuti langkah dari atas ke bawah secepat mungkin.
+5. **Melindungi orang tua atau keluarga?** Buka `/keluarga`, centang checklist, kirim kartu peringatan, dan sepakati kata sandi keluarga.
+6. **Orang tua ragu dengan pesan masuk?** Pasang Jeda di layar utama HP, lalu bagikan pesan langsung lewat menu "Bagikan" ke Jeda.
+
+> Hasil Jeda adalah **indikator risiko**, bukan jaminan. Jika ragu, verifikasi lewat kanal resmi (aplikasi atau nomor resmi instansi).
 
 ---
 
@@ -121,13 +133,14 @@ Pilih siapa yang ingin dilindungi, lalu dapat:
 | Bagian | Teknologi |
 |---|---|
 | Backend | PHP ^8.2, Laravel ^12 |
-| Frontend | Blade, CSS biasa, JavaScript biasa (tanpa framework) |
-| Database | SQLite (default), mendukung MySQL/MariaDB dan PostgreSQL |
-| Sesi dan cache | Driver `database` (default) |
+| Frontend | Blade, CSS dan JavaScript biasa (tanpa framework), font Plus Jakarta Sans |
+| Database | MySQL / MariaDB (juga mendukung SQLite dan PostgreSQL) |
+| Sesi, cache, antrean | Driver `database` |
+| PWA | `manifest.json` dan service worker `sw.js` |
 | Layanan eksternal (opsional) | Google Safe Browsing, VirusTotal, Gemini, Anthropic |
-| Testing | PHPUnit 11 |
+| Testing | PHPUnit 11, `node --test` untuk deteksi tipe file di browser |
 
-> **Catatan aset:** CSS dan JS ada di `public/css/` dan `public/js/`, dimuat lewat `asset()` di `resources/views/layouts/app.blade.php`. Vite/Tailwind (`resources/css/app.css`, `vite.config.js`) bawaan Laravel dan **tidak dipakai** oleh layout, jadi `npm run build` tidak wajib.
+> **Catatan aset:** CSS dan JS dimuat dari `public/css/` dan `public/js/` lewat `asset()` di `resources/views/layouts/app.blade.php`. Vite/Tailwind bawaan Laravel tidak dipakai layout, jadi `npm run build` **tidak wajib**.
 
 ---
 
@@ -137,56 +150,53 @@ Pilih siapa yang ingin dilindungi, lalu dapat:
 Jeda/
 ├── app/
 │   ├── Http/
-│   │   ├── Controllers/
-│   │   │   ├── BedahController.php          # Bedah Pesan (lokal + AI)
-│   │   │   ├── LinkCheckController.php      # Cek Tautan
-│   │   │   ├── LinkExplanationController.php# Penjelasan AI untuk Cek Tautan
-│   │   │   ├── FileCheckController.php      # Cek File
-│   │   │   ├── LatihanController.php        # Kuis berlevel dan EXP
-│   │   │   ├── ProgresController.php        # Checklist, aksi bantuan, ringkasan progres
-│   │   │   ├── JamEmasController.php
-│   │   │   ├── KeluargaController.php
-│   │   │   └── Concerns/HasSessionKey.php   # Kunci sesi (hash SHA-256 dari session id)
-│   │   └── Requests/                        # Validasi input Cek
-│   ├── Services/Cek/                        # Mesin pemeriksaan tautan dan file
-│   └── Support/QuizProgression.php          # Logika EXP dan level
+│   │   ├── Controllers/        # Bedah, LinkCheck, LinkExplanation, FileCheck, FileScan,
+│   │   │                       # Latihan, Recovery, Progres (+ Jam Emas & Keluarga kosong)
+│   │   └── Requests/           # Validasi input Cek
+│   ├── Services/Cek/           # Mesin pemeriksaan tautan, file, dan AI
+│   ├── Support/                # QuizProgression, QuizProgressStore, RecoveryCode
+│   └── Providers/AppServiceProvider.php   # Definisi rate limiter
 ├── config/
-│   ├── jeda_cek.php                         # Daftar merek, TLD, ekstensi, batas bobot
-│   ├── jeda_quiz.php                        # Level dan EXP kuis
-│   └── services.php                         # Key API eksternal
+│   ├── jeda_cek.php            # Merek, TLD, ekstensi, izin APK, batas bobot, batas laju
+│   ├── jeda_quiz.php           # Level dan EXP kuis
+│   └── services.php            # Key API eksternal
 ├── database/migrations/
+├── docs/                       # Dokumentasi teknis (arsitektur, API, database)
 ├── public/
-│   ├── css/  (style.css, nav-mobile.css, latihan.css)
-│   ├── js/   (bedah, cek, file-inspect, latihan, latihan-data, nav, jeda-backend)
-│   ├── fonts/  (Plus Jakarta Sans)
-│   └── images/
-├── resources/views/
-│   ├── layouts/app.blade.php
-│   └── pages/ (home, cek, simulasi, jam-emas, keluarga, batasan)
+│   ├── css/  js/  fonts/  images/
+│   ├── manifest.json           # PWA
+│   └── sw.js                   # Service worker (menu Bagikan)
+├── resources/views/            # layouts/app + pages (home, cek, simulasi, jam-emas, keluarga, bagikan)
 ├── routes/web.php
-└── tests/ (Feature/Cek, LatihanQuizTest, Unit/QuizProgressionTest)
+└── tests/                      # Feature/Cek, Latihan, Recovery; Unit; js
 ```
 
 ---
 
-## Menjalankan Secara Lokal
+## Cara Menjalankan Aplikasi
 
-**Kebutuhan:** PHP 8.2+, Composer. Node.js hanya jika ingin memakai Vite.
+### Kebutuhan
+
+- PHP 8.2+ dengan ekstensi `mbstring`, `openssl`, `pdo_mysql`, `curl`, `fileinfo`, `xml`, `ctype`, `tokenizer`
+- Composer
+- MySQL atau MariaDB (misalnya lewat XAMPP atau Laragon)
+- Node.js (opsional, hanya untuk Vite atau menjalankan tes JS)
+
+### Langkah
 
 ```bash
 # 1. Clone dan masuk folder
 git clone <url-repo> jeda
 cd jeda
 
-# 2. Install dependensi
+# 2. Install dependensi PHP
 composer install
 
 # 3. Siapkan .env lalu generate key
-cp .env.example .env
+#    (repo tidak menyertakan .env.example, buat .env dari contoh di bagian Konfigurasi)
 php artisan key:generate
 
-# 4. Siapkan database (default SQLite)
-touch database/database.sqlite
+# 4. Buat database kosong bernama "jeda" di MySQL, lalu migrasi
 php artisan migrate
 
 # 5. Jalankan
@@ -195,42 +205,70 @@ php artisan serve
 
 Buka `http://127.0.0.1:8000`.
 
-Contoh `.env` minimal untuk lokal:
-
-```env
-APP_NAME=Jeda
-APP_ENV=local
-APP_KEY=
-APP_DEBUG=true
-APP_URL=http://127.0.0.1:8000
-
-DB_CONNECTION=sqlite
-SESSION_DRIVER=database
-CACHE_STORE=database
-```
+Alternatif satu perintah untuk pengembangan (server, antrean, log, dan Vite sekaligus): `composer dev`.
 
 ---
 
 ## Konfigurasi `.env`
 
-Semua key eksternal **opsional**. Tanpa key, fitur terkait menampilkan status "belum lengkap" atau "AI belum aktif", bukan error.
+Buat file `.env` di akar proyek. Contoh untuk lokal dengan MySQL:
+
+```env
+APP_NAME=Jeda
+APP_ENV=local
+APP_KEY=                      # isi lewat: php artisan key:generate
+APP_DEBUG=true
+APP_URL=http://localhost
+APP_LOCALE=en
+APP_FALLBACK_LOCALE=en
+
+LOG_CHANNEL=stack
+LOG_LEVEL=debug
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=jeda
+DB_USERNAME=root
+DB_PASSWORD=
+
+SESSION_DRIVER=database
+SESSION_LIFETIME=120
+QUEUE_CONNECTION=database
+CACHE_STORE=database
+FILESYSTEM_DISK=local
+
+MAIL_MAILER=log
+```
+
+**Variabel opsional khusus Jeda.** Tanpa key ini, fitur terkait menampilkan status "belum lengkap" atau "AI belum aktif", bukan error.
 
 | Variabel | Fungsi |
 |---|---|
-| `APP_KEY` | Wajib. Generate dengan `php artisan key:generate --show` |
-| `APP_URL` | URL publik aplikasi |
-| `DB_CONNECTION` | `sqlite` (default), `mysql`, atau `pgsql` |
-| `DB_URL` / `DB_HOST` / `DB_PORT` / `DB_DATABASE` / `DB_USERNAME` / `DB_PASSWORD` | Koneksi database non-SQLite |
-| `GOOGLE_SAFE_BROWSING_KEY` | Cek reputasi tautan lewat Google Safe Browsing |
-| `VIRUSTOTAL_API_KEY` | Cek tautan dan hash file lewat VirusTotal (gratis: 4 permintaan/menit, 500/hari) |
-| `GEMINI_API_KEY` | Analisis AI dan penjelasan tautan lewat Gemini |
-| `GEMINI_MODEL` | Model Gemini yang dipakai |
+| `SAFE_BROWSING_API_KEY` | Reputasi tautan lewat Google Safe Browsing |
+| `VIRUSTOTAL_API_KEY` | Cek tautan, hash file, dan pemindaian file (gratis: 4 permintaan/menit, 500/hari) |
+| `GEMINI_API_KEY` | Analisis AI Bedah Pesan dan penjelasan Cek Tautan |
+| `GEMINI_MODEL` | Model Gemini (bawaan `gemini-3.8-flash`) |
 | `GEMINI_THINKING_LEVEL` | Opsional |
 | `ANTHROPIC_API_KEY` | Analisis AI lewat Claude |
-| `JEDA_AI_MODEL` | Model Anthropic (default `claude-haiku-5-5`) |
-| `JEDA_AI_PROVIDER` | `gemini` atau `anthropic` untuk memaksa penyedia. Kosong = pakai yang key-nya terisi (Gemini diprioritaskan) |
+| `JEDA_AI_MODEL` | Model Anthropic (bawaan `claude-haiku-5-5`) |
+| `JEDA_AI_PROVIDER` | `gemini` atau `anthropic`. Kosong = pakai yang key-nya terisi (Gemini diprioritaskan) |
+| `JEDA_CEK_PER_MINUTE` / `JEDA_CEK_PER_HOUR` | Batas Cek Tautan/File per IP (bawaan 10 dan 120) |
+| `JEDA_UPLOAD_MAX_BYTES` | Batas ukuran pemindaian file (bawaan 10 MB, maksimum 32 MB) |
+| `JEDA_UPLOAD_PER_MINUTE` / `JEDA_UPLOAD_PER_HOUR` | Batas pemindaian file per IP (bawaan 3 dan 15) |
 
-Jangan pernah commit `.env` atau key API ke repo.
+> **Keamanan:** jangan commit `.env` atau key API ke repo (sudah ada di `.gitignore`). `APP_KEY` bersifat rahasia; buat ulang dengan `php artisan key:generate` jika pernah terbagikan.
+
+---
+
+## Testing
+
+```bash
+php artisan test        # atau: composer test
+node --test             # tes deteksi tipe file di browser (file-inspect.js)
+```
+
+`phpunit.xml` memakai SQLite in-memory, jadi ekstensi `pdo_sqlite` harus aktif. Cakupan utama: `RiskScorer`, `UrlHeuristics`, `RedirectTracer`, `NetworkGuard`, Cek Tautan, Cek File, pemindaian file, penjelasan Gemini, kuis Latihan, `QuizProgression`, dan kode pemulihan.
 
 ---
 
@@ -241,77 +279,27 @@ Jangan pernah commit `.env` atau key API ke repo.
    ```env
    APP_ENV=production
    APP_DEBUG=false
-   APP_KEY=base64:...            # dari: php artisan key:generate --show
+   APP_KEY=base64:...          # dari: php artisan key:generate --show
    APP_URL=https://domain-kamu.up.railway.app
    ASSET_URL=https://domain-kamu.up.railway.app
    ```
-   Tambahkan juga key API opsional dari tabel di atas.
-3. Railway menghentikan HTTPS di proxy. Supaya Laravel membuat URL `https://` (CSS/JS tidak diblokir sebagai *mixed content*), trust proxy **sudah diaktifkan** di `bootstrap/app.php` (`$middleware->trustProxies(at: '*')`), jadi tidak perlu diubah lagi.
+   Tambahkan variabel koneksi database dan key API opsional.
+3. Proxy HTTPS sudah dipercaya (`trustProxies` di `bootstrap/app.php`) dan skema `https` dipaksa saat `APP_ENV=production`.
 4. Jalankan migrasi saat deploy: `php artisan migrate --force`.
 5. Pastikan document root web server adalah folder `public/`.
-
-**Soal database di Railway:** SQLite disimpan di filesystem container yang **hilang saat redeploy** (kecuali memakai Volume). Karena sesi, cache, dan progres pengguna semuanya tersimpan di database, untuk produksi sebaiknya tambahkan **PostgreSQL/MySQL** dari Railway dan set `DB_CONNECTION` beserta variabel koneksinya, atau pasang Volume untuk file SQLite.
-
----
-
-## Endpoint API Internal
-
-Semua di bawah prefix `/jeda/api`, hanya `POST`/`GET` dari halaman Jeda sendiri.
-
-| Method | Path | Fungsi | Throttle |
-|---|---|---|---|
-| POST | `/analisis-pesan` | Catat hasil Bedah Pesan lokal (skor + indikator) | - |
-| POST | `/bedah-ai` | Analisis AI untuk Bedah Pesan | 10/menit |
-| POST | `/cek-tautan` | Pemeriksaan tautan lengkap | 10/menit per IP |
-| POST | `/cek-tautan/penjelasan` | Penjelasan AI hasil Cek Tautan | 5/menit per IP |
-| POST | `/cek-file` | Pemeriksaan file (ringkasan + SHA-256) | 10/menit per IP |
-| POST | `/simulasi` | Simpan hasil simulasi (tersedia di API, belum dipakai tampilan saat ini) | - |
-| GET | `/quiz-progress` | Progres kuis dan level | - |
-| POST | `/quiz-attempt` | Simpan hasil satu ronde kuis | 30/menit |
-| POST | `/checklist` | Simpan checklist Jam Emas / Keluarga | - |
-| POST | `/aksi-bantuan` | Catat aksi bantuan | - |
-| GET | `/progres` | Ringkasan progres semua modul | - |
-
----
-
-## Database
-
-Tabel buatan Jeda (semua dikaitkan lewat `session_key`, bukan akun):
-
-| Tabel | Isi |
-|---|---|
-| `jeda_message_analyses` | Skor, level risiko, id indikator, panjang teks (bukan isi pesan) |
-| `jeda_link_checks` | Hostname, skor, sinyal, hasil per pemeriksaan, penjelasan AI, umur domain |
-| `jeda_file_checks` | Ekstensi, jenis terdeteksi, ukuran, skor, sinyal |
-| `jeda_simulation_attempts` | Skenario, opsi dipilih, skor |
-| `jeda_quiz_attempts` | Level, tanggal, skor, jawaban, EXP yang didapat |
-| `jeda_checklist_items` | Checklist per fitur dan situasi |
-| `jeda_support_actions` | Aksi bantuan yang diklik pengguna |
-
-Ditambah tabel bawaan Laravel (`users`, `sessions`, `cache`, `jobs`).
-
----
-
-## Testing
-
-```bash
-php artisan test
-# atau
-composer test
-```
-
-Cakupan utama: `RiskScorer`, `UrlHeuristics`, `RedirectTracer`, `NetworkGuard`, cek tautan, cek file, penjelasan Gemini, kuis Latihan, dan `QuizProgression`.
+6. Gunakan database terkelola (MySQL/PostgreSQL) karena sesi, cache, dan progres pengguna tersimpan di database. SQLite di filesystem container hilang saat redeploy.
 
 ---
 
 ## Privasi dan Keamanan
 
-- **Tanpa akun.** Data dipisah per sesi browser; kunci sesi di-hash sebelum disimpan.
+- **Tanpa akun.** Data dipisah per sesi browser; kunci sesi di-hash (SHA-256) sebelum disimpan.
 - **Isi pesan tidak disimpan.** Server hanya mencatat skor, id indikator, dan panjang teks.
-- **Isi file tidak diunggah.** Hanya ringkasan dan SHA-256.
+- **Isi file tidak diunggah** secara bawaan; pemindaian antivirus butuh persetujuan eksplisit dan tidak menyimpan apa pun.
 - **Data pribadi disamarkan** (nomor HP, rekening, email) sebelum teks dikirim ke API AI.
-- **Perlindungan SSRF.** `NetworkGuard` memblokir akses ke jaringan internal saat server membuka tautan.
-- **Pembatasan laju** pada endpoint yang memakai API berkuota.
+- **Perlindungan SSRF.** `NetworkGuard` memblokir jaringan internal dan hanya mengizinkan port 80 dan 443.
+- **Pembatasan laju** pada endpoint yang memakai API berkuota atau rawan ditebak.
+- **Kode pemulihan** hanya disimpan sebagai hash dan dibatasi 5 percobaan per menit per IP.
 - **Prompt AI** memperlakukan isi pesan sebagai data, bukan perintah.
 - **Kegagalan tidak berarti aman.** Pemeriksaan yang tidak lengkap ditandai "belum lengkap".
 
@@ -322,9 +310,19 @@ Cakupan utama: `RiskScorer`, `UrlHeuristics`, `RedirectTracer`, `NetworkGuard`, 
 - Skor Bedah Pesan berbasis aturan, bukan machine learning, sehingga penipuan baru bisa lolos.
 - Daftar merek dan domain resmi di `config/jeda_cek.php` adalah contoh awal; **verifikasi ulang sebelum dipakai di demo atau produksi**.
 - Hasil AI bisa salah dan selalu diberi label.
-- **Progres kuis terikat sesi browser.** Level dan EXP bisa hilang jika cookie dihapus, memakai browser atau perangkat lain, atau sesi kedaluwarsa (bawaan 120 menit tanpa aktivitas; atur lewat `SESSION_LIFETIME`).
-- **Soal kuis disusun dari pengetahuan umum tentang modus penipuan digital** dan belum diverifikasi dengan sumber resmi (misalnya OJK, BSSN, atau Komdigi). Perlakukan sebagai bahan latihan, bukan rujukan hukum.
-- Jeda tidak menjamin sebuah tautan, file, atau pesan 100% aman. Selalu verifikasi lewat kanal resmi.
+- Progres kuis terikat sesi browser. Tanpa kode pemulihan, level dan EXP bisa hilang jika cookie dihapus, berpindah perangkat, atau sesi kedaluwarsa (bawaan 120 menit).
+- Soal kuis disusun dari pengetahuan umum tentang modus penipuan dan belum diverifikasi dengan sumber resmi (misalnya OJK, BSSN, Komdigi). Perlakukan sebagai bahan latihan.
+- Jeda tidak menjamin sebuah tautan, file, atau pesan 100% aman.
+
+---
+
+## Dokumentasi Teknis
+
+| Dokumen | Isi |
+|---|---|
+| [docs/ARSITEKTUR.md](docs/ARSITEKTUR.md) | Arsitektur, alur data tiap fitur, sistem skor, pengamanan |
+| [docs/API.md](docs/API.md) | Daftar endpoint internal, batas laju, contoh permintaan |
+| [docs/DATABASE.md](docs/DATABASE.md) | Skema tabel dan relasi lewat `session_key` |
 
 ---
 
