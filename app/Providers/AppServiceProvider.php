@@ -37,6 +37,8 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('jeda-upload-status', fn (Request $request) => Limit::perMinute(12)->by($request->ip()));
         // Penjelasan AI memakai kuota Gemini, jadi dibatasi lebih ketat.
         RateLimiter::for('jeda-ai', fn (Request $request) => Limit::perMinute(5)->by($request->ip()));
+        // Kode pemulihan progres: dibatasi ketat per IP supaya kode tidak bisa ditebak. Kunci sendiri agar tidak berbagi hitungan dengan rute lain.
+        RateLimiter::for('jeda-recovery', fn (Request $request) => Limit::perMinute(5)->by('recovery|'.$request->ip()));
         if (app()->environment('production')) {
     \Illuminate\Support\Facades\URL::forceScheme('https');
 }
