@@ -4,9 +4,11 @@
 
 @section('content')
 
-<main class="wrap">
+<main class="wrap" id="bedahRoot"
+      data-ai-url="{{ route('jeda.api.bedah-ai') }}"
+      data-log-url="{{ route('jeda.api.analyze-message') }}"
+      data-csrf="{{ csrf_token() }}">
 
-    {{-- Hero --}}
     <section class="hero">
         <h1>Ragu? Jeda dulu.</h1>
         <p class="mut" style="max-width:640px;font-size:18px">
@@ -16,43 +18,31 @@
 
     <div class="grid2">
 
-        {{-- KOLOM KIRI: input dan analisis AI --}}
         <div class="stack">
 
             <div class="card">
                 <h2>Pesan atau tautan yang bikin ragu</h2>
                 <textarea id="bedahInput" aria-label="Pesan" maxlength="12000" style="min-height:180px" placeholder="Tempel pesan WhatsApp, SMS, atau DM yang bikin kamu ragu di sini..."></textarea>
+
+                <div class="notice" style="margin:12px 0">
+                    <b>Analisis memakai AI pihak ketiga.</b>
+                    Teks dikirim ke layanan AI untuk mendeteksi pola. Nomor HP, rekening, dan email disamarkan otomatis, dan teks tidak kami simpan.
+                    Jangan tempel nama atau data pribadi.
+                </div>
+                <label class="small" style="display:flex;gap:8px;align-items:flex-start;margin-bottom:12px">
+                    <input type="checkbox" id="bedahAiToggle" checked style="margin-top:3px">
+                    <span>Kirim ke AI untuk analisis. Kalau dimatikan, hanya pemeriksaan dasar di perangkatmu yang jalan dan tidak ada teks yang dikirim.</span>
+                </label>
+
                 <div class="row">
                     <button class="btn" id="bedahRun" type="button">Bedah pesan</button>
-                    <button class="btn ghost" id="bedahSample" type="button">Pakai contoh fiktif</button>
+                    <!-- <button class="btn ghost" id="bedahSample" type="button">Pakai contoh fiktif</button> -->
                 </div>
-                <p class="small" style="margin-top:12px">
-                    Pemeriksaan dasar berjalan di perangkatmu. Tidak ada teks yang dikirim ke mana pun kecuali kamu memilih analisis AI.
-                </p>
-            </div>
-
-            <div class="card" style="border:1.5px dashed var(--blue)">
-                <div class="row" style="justify-content:space-between;align-items:center">
-                    <h3 style="margin:0">Analisis lebih dalam dengan AI</h3>
-                    <span class="tag t-violet">Opsional</span>
-                </div>
-                <p class="mut" style="margin:10px 0 12px">
-                    Menangkap variasi pola yang lolos dari pemeriksaan dasar.
-                </p>
-                <div class="notice" style="margin-bottom:12px">
-                    <b>Teks akan dikirim ke layanan AI pihak ketiga.</b>
-                    Jangan tempel nama atau data pribadi. Nomor HP, rekening, dan email disamarkan otomatis. Teks tidak kami simpan.
-                </div>
-                <button class="btn ghost block" id="bedahAiRun" type="button">Kirim ke AI dan analisis</button>
-                <p class="small" style="margin:10px 0 0">
-                    Hasil AI tampil terpisah dan berlabel "Dianalisis AI, bisa salah".
-                </p>
-                <div id="bedahAiOut" aria-live="polite"></div>
+                <p class="small" id="bedahAiOut" aria-live="polite" style="margin:12px 0 0"></p>
             </div>
 
         </div>
 
-        {{-- KOLOM KANAN: hasil dan langkah lanjut --}}
         <div class="stack">
 
             <div class="card">
@@ -86,6 +76,6 @@
     </div>
 </main>
 
-<script src="{{ asset('js/bedah.js') }}" defer></script>
+<script src="{{ asset('js/bedah.js') }}?v={{ @filemtime(public_path('js/bedah.js')) }}" defer></script>
 
 @endsection
