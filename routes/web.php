@@ -7,6 +7,7 @@ use App\Http\Controllers\LinkExplanationController;
 use App\Http\Controllers\LatihanController;
 use App\Http\Controllers\ProgresController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\RecoveryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -42,6 +43,12 @@ Route::prefix('jeda/api')->name('jeda.api.')->group(function () {
         Route::post('simulasi', 'saveSimulation')->name('simulation');
         Route::get('quiz-progress', 'quizProgress')->name('quiz-progress');
         Route::post('quiz-attempt', 'saveQuizAttempt')->middleware('throttle:30,1')->name('quiz-attempt');
+    });
+
+    // Kode pemulihan progres Latihan (pengganti akun). Dibatasi ketat agar kode tidak bisa ditebak.
+    Route::controller(RecoveryController::class)->prefix('quiz-recovery')->middleware('throttle:jeda-recovery')->group(function () {
+        Route::post('create', 'create')->name('quiz-recovery-create');
+        Route::post('redeem', 'redeem')->name('quiz-recovery-redeem');
     });
 
     // Dipakai lintas modul (checklist Jam Emas/Keluarga/Kartu, aksi bantuan, ringkasan).

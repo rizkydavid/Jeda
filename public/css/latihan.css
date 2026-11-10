@@ -391,6 +391,30 @@
 .quiz-rules li { padding: 11px 12px; border: 1px solid var(--q-line); border-radius: 13px; background: var(--q-surface-2); font-size: .78rem; line-height: 1.5; color: var(--q-muted); }
 .quiz-rules b { display: block; margin-bottom: 2px; font-size: .82rem; color: var(--q-ink); }
 
+/* Kode pemulihan progres */
+.quiz-recovery { margin: 0 0 16px; padding: 18px; border: 1px solid var(--q-line); border-radius: 18px; background: var(--q-surface-2); }
+.quiz-recovery-head { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 14px; }
+.quiz-recovery-icon { display: grid; place-items: center; flex: 0 0 auto; width: 42px; height: 42px; border-radius: 13px; background: var(--q-chip); font-size: 1.2rem; }
+.quiz-recovery-head h3 { margin: 0 0 3px; font-size: 1.02rem; color: var(--q-ink); }
+.quiz-recovery-head p { margin: 0; font-size: .82rem; line-height: 1.55; color: var(--q-muted); }
+.quiz-recovery-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.quiz-recovery-box { display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px solid var(--q-line); border-radius: 14px; background: var(--q-card); }
+.quiz-recovery-box h4 { margin: 0; font-size: .92rem; color: var(--q-ink); }
+.quiz-recovery-note { margin: 0; font-size: .78rem; line-height: 1.5; color: var(--q-muted); }
+.quiz-recovery-box .quiz-btn { margin-top: auto; }
+.quiz-code-box { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border: 1px dashed #6f93f3; border-radius: 12px; background: var(--q-chip); }
+.quiz-code-box code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 1rem; font-weight: 800; letter-spacing: .06em; color: var(--q-ink); word-break: break-all; user-select: all; }
+.quiz-code-box .quiz-btn { margin: 0; padding: 7px 12px; font-size: .8rem; }
+.quiz-recovery-warn { margin: 0; padding: 9px 11px; border-radius: 10px; background: #fff4d6; color: #7a5200; font-size: .78rem; line-height: 1.5; }
+:root[data-theme="dark"] .quiz-recovery-warn { background: #4a3d1f; color: #ffd98a; }
+.quiz-input { width: 100%; padding: 11px 12px; border: 1px solid var(--q-line); border-radius: 12px; background: var(--q-surface); color: var(--q-ink); font: inherit; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: .05em; text-transform: uppercase; }
+.quiz-input::placeholder { color: var(--q-muted); opacity: .7; text-transform: none; letter-spacing: .03em; }
+.quiz-input:focus-visible { outline: 3px solid rgba(60, 130, 210, .35); outline-offset: 1px; border-color: #6f93f3; }
+.quiz-recovery-msg { min-height: 1.2em; margin: 12px 0 0; font-size: .84rem; font-weight: 700; color: var(--q-chip-ink); }
+.quiz-recovery-msg.is-error { color: #c23b3b; }
+:root[data-theme="dark"] .quiz-recovery-msg.is-error { color: #ff9b9b; }
+.quiz-recovery-fine { margin: 6px 0 0; font-size: .74rem; line-height: 1.5; color: var(--q-muted); }
+
 /* 5. Bermain -------------------------------------------------------------- */
 .quiz-topline { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 13px; font-size: .88rem; color: var(--q-muted); }
 #quizCounter { font-weight: 800; color: var(--q-ink); }
@@ -597,6 +621,7 @@
 }
 @media (max-width: 700px) {
     .quiz-rules { grid-template-columns: 1fr; }
+    .quiz-recovery-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 600px) {
     .quiz-page { padding: 20px 13px 45px; }

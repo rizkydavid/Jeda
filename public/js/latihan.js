@@ -35,6 +35,7 @@
         responses: [],
         xp: defaultXp(),
         selected: null,    // level yang sedang dipilih di peta
+        recovery: { has_code: false, created_at: null }, // status kode pemulihan (kodenya sendiri tidak disimpan)
         levels: {},        // statistik per level dari server
         loaded: false,
     };
@@ -102,6 +103,7 @@
     function applyProgress(data) {
         if (data.xp) state.xp = data.xp;
         if (data.levels) state.levels = data.levels;
+        if (data.recovery) state.recovery = data.recovery;
     }
 
     /* ------------------------------------------------------------ tampilan */
@@ -110,6 +112,7 @@
         renderMap();
         renderDetail();
         renderAside();
+        renderRecovery();
     }
 
     function xpLabel(summary) {
@@ -330,6 +333,106 @@
 
         const { bar } = xpBar(s.percent);
         box.append(head, bar, el('p', 'quiz-aside-xp', xpLabel(s)));
+    }
+
+    /* -------------------------------------------------- kode pemulihan progres */
+    async function postJson(url, payload) {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf },
+            body: JSON.stringify({ ...payload, date: todayKey() }),
+        });
+        let data = {};
+        try { data = await response.json(); } catch (error) { /* respons bukan JSON */ }
+        return { ok: response.ok, status: response.status, data };
+    }
+
+    function recoveryMessage(text, isError = false) {
+        const box = $('recoveryMessage');
+        box.textContent = text;
+        box.classList.toggle('is-error', isError);
+    }
+
+    function failureText(result, fallback) {
+        if (result.status === 429) return 'Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi.';
+        return result.data?.message || fallback;
+    }
+
+    function renderRecovery() {
+        const status = $('recoveryStatus');
+        if (!status) return;
+        const { has_code: hasCode, created_at: createdAt } = state.recovery;
+        const codeVisible = !$('recoveryCodeBox').classList.contains('quiz-hidden');
+        if (codeVisible) {
+            status.textContent = 'Ini kode aktifmu. Kode sebelumnya (jika ada) sudah tidak berlaku.';
+        } else if (hasCode) {
+            const when = createdAt ? new Date(createdAt.replace(' ', 'T')) : null;
+            const date = when && !Number.isNaN(when.getTime()) ? when.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+            status.textContent = `Kode sudah dibuat${date ? ` pada ${date}` : ''}. Demi keamanan kode tidak bisa ditampilkan lagi. Lupa? Buat kode baru (kode lama tidak berlaku).`;
+        } else {
+            status.textContent = 'Belum ada kode. Buat satu untuk mencadangkan level dan EXP-mu.';
+        }
+        $('recoveryCreate').textContent = hasCode ? 'Buat kode baru' : 'Buat kode pemulihan';
+    }
+
+    async function createRecoveryCode() {
+        if (state.recovery.has_code && !window.confirm('Kode lama tidak akan berlaku lagi. Buat kode baru?')) return;
+        const button = $('recoveryCreate');
+        button.disabled = true;
+        recoveryMessage('Membuat kode…');
+        try {
+            const result = await postJson(CONFIG.routes.recoveryCreate, {});
+            if (!result.ok) { recoveryMessage(failureText(result, 'Kode belum bisa dibuat.'), true); return; }
+            applyProgress(result.data);
+            $('recoveryCode').textContent = result.data.code;
+            show('recoveryCodeBox'); show('recoveryWarn');
+            recoveryMessage(result.data.message || 'Kode pemulihan dibuat.');
+            renderRecovery();
+        } catch (error) {
+            recoveryMessage('Koneksi bermasalah. Coba lagi.', true);
+        } finally {
+            button.disabled = false;
+        }
+    }
+
+    async function copyRecoveryCode() {
+        const text = $('recoveryCode').textContent;
+        try {
+            await navigator.clipboard.writeText(text);
+            recoveryMessage('Kode disalin. Simpan di tempat yang aman.');
+        } catch (error) {
+            const range = document.createRange();
+            range.selectNodeContents($('recoveryCode'));
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            recoveryMessage('Kode terpilih. Tekan Ctrl+C (atau tahan lalu salin) untuk menyalin.');
+        }
+    }
+
+    async function redeemRecoveryCode() {
+        const code = $('recoveryInput').value.trim();
+        if (!code) { recoveryMessage('Masukkan kode pemulihanmu dulu.', true); return; }
+        const button = $('recoveryRedeem');
+        button.disabled = true;
+        recoveryMessage('Memeriksa kode…');
+        try {
+            const result = await postJson(CONFIG.routes.recoveryRedeem, { code });
+            if (!result.ok) { recoveryMessage(failureText(result, 'Kode belum bisa dipakai.'), true); return; }
+            applyProgress(result.data);
+            state.selected = null;
+            $('recoveryInput').value = '';
+            hide('recoveryCodeBox'); hide('recoveryWarn');
+            renderHome();
+            const { level, xp } = result.data.xp;
+            recoveryMessage(result.data.already
+                ? 'Progres ini sudah aktif di browser ini.'
+                : `Progres dipulihkan: Level ${level} · ${fmt(xp)} EXP.`);
+        } catch (error) {
+            recoveryMessage('Koneksi bermasalah. Coba lagi.', true);
+        } finally {
+            button.disabled = false;
+        }
     }
 
     /* ---------------------------------------------------------------- ronde */
@@ -577,6 +680,10 @@
         if (state.index < state.questions.length - 1) { state.index++; renderQuestion(); } else finishQuiz();
     });
     $('quizBackToLevels').addEventListener('click', backToLevels);
+    $('recoveryCreate').addEventListener('click', createRecoveryCode);
+    $('recoveryCopy').addEventListener('click', copyRecoveryCode);
+    $('recoveryRedeem').addEventListener('click', redeemRecoveryCode);
+    $('recoveryInput').addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); redeemRecoveryCode(); } });
 
     if (mobileQuery.addEventListener) mobileQuery.addEventListener('change', renderMap);
     renderHome();

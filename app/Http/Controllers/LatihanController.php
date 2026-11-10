@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\HasSessionKey;
 use App\Support\QuizProgression;
+use App\Support\QuizProgressStore;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -107,29 +108,12 @@ class LatihanController extends Controller
     /** @return array<string, mixed> */
     private function progressPayload(string $key, string $date): array
     {
-        $progression = QuizProgression::fromConfig();
-        $rows = DB::table(self::TABLE)->where('session_key', $key)->orderByDesc('id')->get(['level', 'score', 'quiz_date', 'exp_earned']);
-
-        $levels = [];
-        foreach ($rows->groupBy('level') as $level => $attempts) {
-            $levels[(int) $level] = [
-                'best_score' => (int) $attempts->max('score') * 10,
-                'latest_score' => (int) $attempts->first()->score * 10,
-                'attempts' => $attempts->count(),
-                'rounds_today' => $attempts->where('quiz_date', $date)->count(),
-            ];
-        }
-
-        return [
-            'ok' => true,
-            'xp' => $progression->summary((int) $rows->sum('exp_earned')),
-            'levels' => $levels,
-        ];
+        return QuizProgressStore::make()->payload($key, $date);
     }
 
     private function totalXp(string $key): int
     {
-        return (int) DB::table(self::TABLE)->where('session_key', $key)->sum('exp_earned');
+        return QuizProgressStore::make()->totalExp($key);
     }
 
     private function quizDate(mixed $value): string

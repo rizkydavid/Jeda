@@ -31,6 +31,36 @@
                     <li><b>Bonus sempurna</b>Jawab 10 dari 10 benar untuk bonus EXP tambahan.</li>
                     <li><b>Main ulang bebas</b>Level yang sudah terbuka bisa dimainkan kapan saja.</li>
                 </ul>
+                <section class="quiz-recovery" aria-labelledby="recoveryTitle">
+                    <div class="quiz-recovery-head">
+                        <span class="quiz-recovery-icon" aria-hidden="true">🔑</span>
+                        <div>
+                            <h3 id="recoveryTitle">Cadangkan progres</h3>
+                            <p>Jeda tanpa akun, jadi progres tersimpan di browser ini. Buat kode pemulihan supaya level dan EXP-mu bisa dikembalikan jika riwayat browser terhapus atau saat pindah perangkat.</p>
+                        </div>
+                    </div>
+                    <div class="quiz-recovery-grid">
+                        <div class="quiz-recovery-box">
+                            <h4>Kode pemulihanmu</h4>
+                            <p class="quiz-recovery-note" id="recoveryStatus"></p>
+                            <div class="quiz-code-box quiz-hidden" id="recoveryCodeBox">
+                                <code id="recoveryCode" aria-label="Kode pemulihan"></code>
+                                <button class="quiz-btn" id="recoveryCopy" type="button">Salin</button>
+                            </div>
+                            <p class="quiz-recovery-warn quiz-hidden" id="recoveryWarn">Simpan kode ini sekarang (foto layar atau catat). Kode hanya ditampilkan sekali dan tidak bisa dilihat lagi.</p>
+                            <button class="quiz-btn primary" id="recoveryCreate" type="button">Buat kode pemulihan</button>
+                        </div>
+                        <div class="quiz-recovery-box">
+                            <h4>Punya kode? Pulihkan progres</h4>
+                            <p class="quiz-recovery-note">Masukkan kode yang pernah kamu simpan. Progres dari kode itu dipindahkan ke browser ini dan digabung dengan progres yang sudah ada.</p>
+                            <input class="quiz-input" id="recoveryInput" type="text" placeholder="JEDA-XXXX-XXXX-XXXX" aria-label="Masukkan kode pemulihan" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="30">
+                            <button class="quiz-btn" id="recoveryRedeem" type="button">Pulihkan progres</button>
+                        </div>
+                    </div>
+                    <p class="quiz-recovery-msg" id="recoveryMessage" role="status"></p>
+                    <p class="quiz-recovery-fine">Siapa pun yang memegang kode ini bisa memakai progresmu, jadi jangan dibagikan. Kode yang hilang tidak bisa dipulihkan karena Jeda tidak menyimpan kodenya.</p>
+                </section>
+
                 <div class="quiz-save-status" id="quizProgressStatus" role="status">Memuat progres latihan...</div>
             </div>
 
@@ -89,6 +119,8 @@
             levels: @json(collect(config('jeda_quiz.levels'))->map(fn ($level, $id) => ['id' => $id] + $level)->values()),
             routes: {
                 save: @json(route('jeda.api.quiz-attempt')),
+                recoveryCreate: @json(route('jeda.api.quiz-recovery-create')),
+                recoveryRedeem: @json(route('jeda.api.quiz-recovery-redeem')),
                 progress: @json(route('jeda.api.quiz-progress')),
             },
         };
