@@ -8,10 +8,11 @@ namespace App\Services\Cek;
  *  - pemeriksaan yang tidak berhasil dilaporkan sebagai "belum lengkap", tidak pernah dianggap aman;
  *  - skor dihitung oleh RiskScorer yang sama (tanda yang sama tidak dihitung dua kali, ada batas per kelompok).
  *
- * PRIVASI: isi file TIDAK PERNAH sampai ke server. Browser membaca file di perangkat pengguna (lihat
+ * PRIVASI: secara bawaan isi file TIDAK sampai ke server. Browser membaca file di perangkat pengguna (lihat
  * public/js/file-inspect.js) dan hanya mengirim: nama file, ukuran, jenis isi hasil deteksi, beberapa penanda
  * (mis. "PDF memuat JavaScript"), dan sidik jari SHA-256. Server menilai nama file sendiri (tidak mempercayai
- * browser untuk hal yang bisa dihitung dari nama) lalu mencocokkan SHA-256 ke VirusTotal.
+ * browser untuk hal yang bisa dihitung dari nama) lalu mencocokkan SHA-256 ke VirusTotal. File baru dikirim ke
+ * VirusTotal HANYA bila pengguna menyetujuinya secara eksplisit (lihat FileScanController), tidak lewat jalur ini.
  *
  * Penanda dari browser tidak bisa dipalsukan untuk merugikan siapa pun selain pengirimnya sendiri: hasilnya
  * hanya ditampilkan kepada pengguna yang sama.
@@ -22,7 +23,7 @@ final class FileAnalysisService
     public const FLAGS = [
         'archive_executable', 'archive_double_extension', 'archive_encrypted', 'archive_unreadable',
         'has_macro', 'pdf_javascript', 'pdf_launch', 'pdf_openaction', 'pdf_embedded',
-        'html_password_form', 'html_external_form', 'svg_script', 'rtf_object', 'apk_unreadable',
+        'html_password_form', 'html_external_form', 'svg_script', 'rtf_object', 'apk_unreadable', 'eicar_test',
     ];
 
     /** Jenis isi yang berarti "program atau pemasang". */
@@ -56,7 +57,10 @@ final class FileAnalysisService
         $scanned = (bool) ($in['content_scanned'] ?? false);
         $flags = array_filter(array_intersect_key((array) ($in['flags'] ?? []), array_flip(self::FLAGS)));
         $size = max(0, (int) ($in['size'] ?? 0));
-        $tooLarge = $size > (int) config('jeda_cek.max_file_bytes', 50 * 1024 * 1024);
+        $large = $size > (int) config('jeda_cek.max_file_bytes', 50 * 1024 * 1024);
+        $tooLarge = $size > (int) config('jeda_cek.max_large_file_bytes', 2 * 1024 * 1024 * 1024);
+        // Browser melaporkan bila hanya sebagian isi yang dipindai (file besar, atau PDF/HTML lebih panjang dari jendela baca).
+        $partial = $scanned && ! empty($in['content_partial']);
 
         $signals = $this->nameSignals($name);
         if ($scanned) {
@@ -72,11 +76,18 @@ final class FileAnalysisService
 
         // --- Pemeriksaan: pembacaan isi (dilakukan browser) ------------------------------------------
         $checks = [];
-        if ($scanned) {
-            $checks['content'] = $this->check('Pembacaan isi file (di browser)', 'ok', 'Header, struktur, dan sidik jari file dibaca di perangkatmu. File tidak diunggah.');
+        if ($scanned && $partial) {
+            // Tidak 'ok': tanda di bagian tengah file bisa terlewat, jadi hasilnya tidak boleh tampak lengkap.
+            $checks['content'] = $this->check('Pembacaan isi file (di browser)', 'partial',
+                'File ini besar atau panjang, jadi hanya bagian awalnya yang dipindai untuk tanda berbahaya (mis. JavaScript di PDF). Tanda di bagian tengah file bisa terlewat. Sidik jari seluruh file tetap dihitung di perangkatmu, dan file tidak diunggah.');
+        } elseif ($scanned && $large) {
+            $checks['content'] = $this->check('Pembacaan isi file (di browser)', 'ok',
+                'File besar dibaca bertahap di perangkatmu: jenis isi, daftar isi arsip, dan sidik jari seluruh file. File tidak diunggah.');
+        } elseif ($scanned) {
+            $checks['content'] = $this->check('Pembacaan isi file (di browser)', 'ok', 'Header, struktur, dan sidik jari file dibaca di perangkatmu. File tidak diunggah kecuali kamu memilih memindainya dengan antivirus.');
         } else {
             $checks['content'] = $this->check('Pembacaan isi file (di browser)', 'skipped', $tooLarge
-                ? 'File lebih besar dari batas pemeriksaan, jadi hanya nama file yang diperiksa.'
+                ? 'File terlalu besar untuk dibaca di browser, jadi hanya nama file yang diperiksa. Gunakan antivirus di perangkatmu untuk file sebesar ini.'
                 : 'Hanya nama file yang diperiksa. Pilih filenya agar isinya ikut dibaca di perangkatmu.');
         }
 
@@ -104,7 +115,7 @@ final class FileAnalysisService
             'checks' => $checks,
             'message' => self::adviceFor($level),
             'coverage_note' => $coverage['status'] === 'lengkap' ? null : $this->coverageNote($coverage),
-            'summary' => $this->summary($level, (bool) $evaluation['confirmed'], $evaluation['signals'], $checks, $type, $ext, $apk, $flags, $scanned),
+            'summary' => $this->summary($level, (bool) $evaluation['confirmed'], $evaluation['signals'], $checks, $type, $ext, $apk, $flags, $scanned, $partial),
             'apk' => $apk === null ? null : [
                 'readable' => $apk['readable'], 'package' => $apk['package'],
                 'permissions' => $apk['permissions'], 'other_count' => $apk['other_count'],
@@ -113,6 +124,7 @@ final class FileAnalysisService
             'double_extension' => in_array('double_extension', array_column($evaluation['signals'], 'id'), true),
             'executable_type' => $this->isExecutableName($this->extensionOf($name)),
             'detected_type' => $scanned ? $type : null,
+            'content_partial' => $partial,
             'size' => $size,
         ];
     }
@@ -263,6 +275,12 @@ final class FileAnalysisService
                 "Ekstensinya .$ext, tetapi isi yang terbaca adalah ".$this->typeLabel($type).'. Bisa juga file yang rusak atau salah nama.', 1, needsOther: true);
         }
 
+        if (! empty($flags['eicar_test'])) {
+            // Bukan virus sungguhan: string uji standar yang sengaja dikenali SEMUA antivirus. Tetap dinilai Tinggi
+            // karena antivirus akan menghapusnya, dan tidak ada alasan menerimanya dari orang lain tanpa penjelasan.
+            $signals[] = new Signal('eicar_test', 'file_content', 'Berisi teks uji antivirus EICAR',
+                'Ditemukan teks standar EICAR. Itu bukan virus sungguhan, melainkan penanda uji yang sengaja dikenali semua antivirus. Kalau kamu tidak sedang menguji antivirus, file ini tidak seharusnya kamu terima.', 8, floor: 8);
+        }
         if (! empty($flags['archive_executable'])) {
             $signals[] = new Signal('archive_executable', 'file_content', 'Arsip berisi program',
                 'Di dalam arsip ada file yang menjalankan program (mis. .exe, .apk, .js, .bat).', 3);
@@ -434,7 +452,7 @@ final class FileAnalysisService
      * @param  array<string,array<string,mixed>>  $checks
      * @return array{kind:string,headline:string,reasons:array<int,string>,passed:array<int,string>,unchecked:array<int,array{label:string,note:?string}>,steps:array<int,string>}
      */
-    private function summary(string $level, bool $confirmed, array $signals, array $checks, string $type, string $ext, ?array $apk, array $flags, bool $scanned): array
+    private function summary(string $level, bool $confirmed, array $signals, array $checks, string $type, string $ext, ?array $apk, array $flags, bool $scanned, bool $partial = false): array
     {
         $ids = array_column($signals, 'id');
         $has = fn (string ...$x) => array_intersect($x, $ids) !== [];
@@ -449,6 +467,7 @@ final class FileAnalysisService
         // Kesimpulan
         $incomplete = ($checks['content']['state'] ?? 'ok') !== 'ok' || ($checks['virustotal']['state'] ?? 'ok') !== 'ok';
         $headline = match (true) {
+            $has('eicar_test') => 'File uji antivirus EICAR terdeteksi (bukan virus sungguhan)',
             $confirmed => 'Banyak mesin keamanan menandai file ini berbahaya',
             $level === 'Tinggi' && $kind === 'apk' => 'Jangan pasang aplikasi ini',
             $level === 'Tinggi' && $kind === 'program' => 'Jangan jalankan file ini',
@@ -473,16 +492,16 @@ final class FileAnalysisService
             if (! $has('type_mismatch_executable', 'executable_content', 'type_mismatch_minor') && isset(self::EXPECTED[$ext])) {
                 $passed[] = "Isi file sesuai dengan ekstensinya (.$ext).";
             }
-            if ($type === 'pdf' && ! $has('pdf_javascript', 'pdf_launch', 'pdf_embedded', 'pdf_openaction')) {
+            if ($type === 'pdf' && ! $partial && ! $has('pdf_javascript', 'pdf_launch', 'pdf_embedded', 'pdf_openaction')) {
                 $passed[] = 'PDF tidak memuat JavaScript, peluncur program, atau file tersembunyi.';
             }
-            if (in_array($type, ['ooxml', 'ole'], true) && ! $has('macro_content')) {
+            if (in_array($type, ['ooxml', 'ole'], true) && ! $partial && ! $has('macro_content')) {
                 $passed[] = 'Tidak ditemukan makro di dalam dokumen.';
             }
             if ($type === 'zip' && ! $has('archive_executable', 'archive_double_extension', 'archive_encrypted')) {
                 $passed[] = 'Arsip tidak berisi program, file berekstensi ganda, atau sandi.';
             }
-            if (in_array($type, ['html', 'svg'], true) && ! $has('html_password_form', 'html_external_form', 'svg_script')) {
+            if (in_array($type, ['html', 'svg'], true) && ! $partial && ! $has('html_password_form', 'html_external_form', 'svg_script')) {
                 $passed[] = 'Tidak ada kolom kata sandi, form ke alamat lain, atau skrip mencurigakan.';
             }
             if ($apk !== null && $apk['readable'] && ! $has('apk_perm_sms', 'apk_perm_accessibility', 'apk_perm_notification', 'apk_perm_overlay', 'apk_perm_device_admin', 'apk_perm_install')) {
@@ -516,7 +535,17 @@ final class FileAnalysisService
             'reasons' => $reasons,
             'passed' => array_values(array_unique($passed)),
             'unchecked' => $unchecked,
-            'steps' => $this->stepsFor($level, $kind),
+            'steps' => $has('eicar_test') ? $this->eicarSteps() : $this->stepsFor($level, $kind),
+        ];
+    }
+
+    /** @return array<int,string> */
+    private function eicarSteps(): array
+    {
+        return [
+            'EICAR tidak merusak apa pun. Antivirus menandainya karena memang dirancang begitu, untuk menguji apakah antivirus bekerja.',
+            'Kalau kamu sendiri yang menyiapkannya untuk menguji, hasil ini benar dan tidak ada yang perlu dikhawatirkan.',
+            'Kalau file ini dikirim orang lain tanpa penjelasan, jangan dibuka dan hapus. Penipu bisa menyisipkan konten berbahaya yang sebenarnya di file yang sama.',
         ];
     }
 
@@ -575,7 +604,7 @@ final class FileAnalysisService
             return [$this->check($label, 'pending', 'Analisis VirusTotal untuk file ini belum selesai. Periksa lagi beberapa saat lagi.', ['result' => null]), []];
         }
         if ($r['result'] === 'unknown') {
-            return [$this->check($label, 'ok', 'File yang persis sama belum pernah dianalisis VirusTotal. Itu wajar untuk file baru, dan bukan berarti aman. Jeda tidak mengunggah file ke VirusTotal.', ['result' => 'unknown']), []];
+            return [$this->check($label, 'ok', 'File yang persis sama belum pernah dianalisis VirusTotal. Itu wajar untuk file baru, dan bukan berarti aman. Jeda tidak mengunggah file ke VirusTotal kecuali kamu memilih memindainya sendiri.', ['result' => 'unknown']), []];
         }
         if ($r['result'] === 'clean') {
             return [$this->check($label, 'ok', "{$r['total']} mesin memeriksa file yang persis sama ini, tidak ada yang menandai berbahaya.", ['result' => 'clean', 'total' => $r['total']]), []];

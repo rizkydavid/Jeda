@@ -6,8 +6,7 @@
     <meta name="description" content="Jeda membantu mengenali tanda tekanan dan penipuan digital sebelum mengambil keputusan.">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Jeda · @yield('title', 'Ruang Aman Digital')</title>
-    <link rel="icon" type="image/png" href="{{ asset('logo.png') }}?v=1">
-    <script>
+    <script nonce="{{ $cspNonce ?? '' }}">
         (() => {
             try {
                 const savedTheme = localStorage.getItem('jeda-theme');
@@ -79,7 +78,7 @@
         @yield('content')
     </main>
     </div>
-    <script>
+    <script nonce="{{ $cspNonce ?? '' }}">
         (() => {
             const themeToggle = document.getElementById('themeToggle');
             const themeIcon = themeToggle?.querySelector('.theme-toggle__icon');
@@ -166,7 +165,7 @@
     </script>
 
     <div class="jeda-toast" id="jedaToast" role="status" aria-live="polite"></div>
-    <script>
+    <script nonce="{{ $cspNonce ?? '' }}">
     (() => {
       const $ = (s, root=document) => root.querySelector(s);
       const $$ = (s, root=document) => [...root.querySelectorAll(s)];

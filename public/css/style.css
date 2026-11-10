@@ -1530,3 +1530,12 @@ html, body, .site-header, .page-content, .card, .notice, .q, .check, .opt, .sw, 
 .cek-route .is-final { border-color: #5368f2; font-weight: 700; }
 .cek-arrow { color: var(--mut); }
 .cek-verdict.is-none .cek-headline::before { content: ""; }
+
+/* ---------- Pindai antivirus (opsional) ---------- */
+.cek-scan { padding: 14px 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--soft); display: flex; flex-direction: column; gap: 10px; }
+.cek-scan.is-done { border-color: #5368f2; }
+.cek-scan label { cursor: pointer; }
+.cek-scan input[type="checkbox"] { width: 20px; height: 20px; margin-top: 2px; flex: none; }
+.cek-scan .btn { align-self: flex-start; }
+.cek-scan .btn[disabled] { opacity: .5; cursor: not-allowed; }
+@media (max-width: 560px) { .cek-scan .btn { align-self: stretch; text-align: center; } }

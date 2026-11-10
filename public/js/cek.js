@@ -55,7 +55,7 @@
   const TAG_BY_LEVEL = { 'Tinggi': 't-rose', 'Sedang': 't-amber', 'Rendah': 't-violet' };
   const STATE_LABEL = {
     ok: '', skipped: 'Dilewati', unavailable: 'Belum berhasil', not_configured: 'Belum diaktifkan',
-    pending: 'Belum selesai', blocked: 'Tidak dibuka',
+    pending: 'Belum selesai', blocked: 'Tidak dibuka', partial: 'Sebagian',
   };
 
   const LEVEL_CLASS = { Tinggi: 'is-high', Sedang: 'is-mid', Rendah: 'is-low' };
@@ -310,30 +310,70 @@
       extra > 0 ? h('p', { class: 'small', style: 'margin:0' }, `+ ${extra} izin lain yang umum atau tidak dikenali.`) : null);
   }
 
-  function renderFileResult(target, r, name) {
+  /** Keterangan untuk file di atas batas baca penuh: apa yang diperiksa dan apa yang tidak. */
+  function largeNotice(r) {
+    const full = cekConfig.maxBytes || 50 * 1024 * 1024;
+    if (!r.size || r.size <= full) return null;
+    const size = formatSize(r.size);
+    if (r.detected_type === null) {
+      const maxLarge = cekConfig.maxLargeBytes || 0;
+      return h('p', { class: 'cek-notice', role: 'status' }, maxLarge && r.size > maxLarge
+        ? `File ini sangat besar (${size}), melebihi batas baca di browser (${formatSize(maxLarge)}), jadi hanya namanya yang diperiksa. Untuk file sebesar ini gunakan antivirus di perangkatmu.`
+        : `File ini besar (${size}) dan tidak berhasil dibaca di browser, jadi hanya namanya yang diperiksa. Gunakan antivirus di perangkatmu.`);
+    }
+    const partial = r.content_partial ? ' Tanda di bagian tengah file (mis. JavaScript di dalam PDF) bisa terlewat.' : '';
+    const scan = cekConfig.uploadMaxBytes
+      ? ` Pemindaian antivirus lewat Jeda hanya untuk file sampai ${formatSize(cekConfig.uploadMaxBytes)}, jadi untuk file sebesar ini gunakan juga antivirus di perangkatmu.`
+      : '';
+    return h('p', { class: 'cek-notice', role: 'status' },
+      `File ini besar (${size}), jadi dibaca dengan cara khusus: jenis isi, struktur arsip dan izin aplikasi (bila APK), serta sidik jari seluruh file, tanpa memuat semuanya sekaligus.${partial}${scan}`);
+  }
+
+  const HIGH_STEPS = [
+    'Jangan buka atau pasang file ini. Hapus filenya.',
+    'Tanyakan ke pengirim lewat telepon atau bertemu langsung, bukan lewat chat yang sama. Akunnya bisa saja sudah diretas.',
+    'Kalau sudah terlanjur dibuka: putuskan internet, jalankan antivirus, dan ganti kata sandi penting dari perangkat lain. Lihat halaman Jam Emas.',
+  ];
+
+  /**
+   * @param {{scan?:object|null, offer?:Node|null}} ctx  scan = hasil pemindaian antivirus (bila sudah dilakukan),
+   *   offer = kartu tawaran pindai (bila belum dilakukan dan memungkinkan).
+   */
+  function renderFileResult(target, r, name, ctx = {}) {
     const sm = r.summary || { headline: r.message, reasons: [], passed: [], unchecked: [], steps: [] };
     const signals = Array.isArray(r.signals) ? r.signals : [];
     const checks = Object.values(r.checks || {});
-    const lvl = ({ Tinggi: 'is-high', Sedang: 'is-mid', Rendah: 'is-low' })[r.level] || 'is-none';
+    const scan = ctx.scan || null;
+    const isEicar = signals.some((x) => x.id === 'eicar_test');
+    // Banyak antivirus sepakat = vonis terkonfirmasi, mengangkat hasil ke Tinggi. Untuk file uji EICAR, penjelasannya
+    // sudah tepat (bukan virus sungguhan), jadi judulnya tidak ditimpa.
+    const escalate = Boolean(scan && scan.confirmed && !isEicar);
+    const level = escalate ? 'Tinggi' : r.level;
+    const score = escalate ? Math.max(r.score, 9) : r.score;
+    const headline = escalate ? scan.headline : sm.headline;
+    const steps = escalate ? HIGH_STEPS : sm.steps;
+    const lvl = ({ Tinggi: 'is-high', Sedang: 'is-mid', Rendah: 'is-low' })[level] || 'is-none';
     const unchecked = (sm.unchecked || []).map((u) => (u.note ? `${u.label}: ${u.note}` : u.label));
 
     target.replaceChildren(
       h('div', { class: 'cek-result' },
         h('div', { class: `cek-verdict ${lvl}` },
           h('div', { class: 'cek-head' },
-            h('span', { class: `tag ${TAG_BY_LEVEL[r.level] || 't-soft'}` }, `Risiko: ${r.level}`),
-            h('span', { class: 'cek-score' }, `Skor ${r.score} dari 10`)),
-          h('h3', { class: 'cek-headline' }, sm.headline),
+            h('span', { class: `tag ${TAG_BY_LEVEL[level] || 't-soft'}` }, `Risiko: ${level}`),
+            h('span', { class: 'cek-score' }, `Skor ${score} dari 10`)),
+          h('h3', { class: 'cek-headline' }, headline),
           h('p', { class: 'small cek-file', style: 'margin:0' }, name)),
+        largeNotice(r),
         section('Kenapa hasilnya begini', '!', sm.reasons, 'is-reasons'),
         renderApk(r.apk),
         section('Sudah dicek dan tidak ditemukan', '✓', sm.passed, 'is-passed'),
         section('Belum bisa dicek', '?', unchecked, 'is-unchecked'),
+        scan ? scanResultSection(scan) : (ctx.offer || null),
         r.coverage && r.coverage.status !== 'lengkap'
           ? h('p', { class: 'cek-notice', role: 'status' }, 'Hasil di atas hanya berdasarkan pemeriksaan yang berhasil, jadi jangan dianggap aman.')
           : null,
-        sm.steps && sm.steps.length
-          ? h('section', { class: 'cek-sec' }, h('h3', {}, 'Yang sebaiknya kamu lakukan'), h('ol', { class: 'cek-steps' }, sm.steps.map((x) => h('li', {}, x))))
+        steps && steps.length
+          ? h('section', { class: 'cek-sec' }, h('h3', {}, 'Yang sebaiknya kamu lakukan'), h('ol', { class: 'cek-steps' }, steps.map((x) => h('li', {}, x))))
           : null,
         h('details', { class: 'cek-more' },
           h('summary', {}, `Rincian skor dan sumber (${signals.length} tanda)`),
@@ -353,41 +393,180 @@
         h('a', { class: 'btn ghost block', href: '/jam-emas' }, 'Sudah terlanjur membuka file ini? Lihat langkahnya')));
   }
 
+  // ---------- Pindai antivirus (opsional, hanya dengan izin) ----------
+  // Satu-satunya jalur tempat isi file dikirim keluar dari perangkat: ke server Jeda, lalu ke VirusTotal.
+  const SCAN_FIRST_POLL_S = 12;
+  const SCAN_POLL_EVERY_S = 20; // kuota gratis VirusTotal hanya 4 permintaan per menit
+  const SCAN_MAX_POLLS = 10;
+
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  async function apiFetch(url, options = {}, timeoutMs = 30000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    let response;
+    try {
+      response = await fetch(url, {
+        credentials: 'same-origin',
+        signal: controller.signal,
+        ...options,
+        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf, 'X-Requested-With': 'XMLHttpRequest', ...(options.headers || {}) },
+      });
+    } catch (error) {
+      if (error && error.name === 'AbortError') throw new Error('Terlalu lama menunggu server. Coba lagi sebentar lagi.');
+      throw new Error('Tidak dapat terhubung ke server. Periksa koneksi internetmu.');
+    } finally {
+      clearTimeout(timer);
+    }
+    const body = await response.json().catch(() => ({}));
+    if (response.status === 419) throw new Error('Sesi habis. Muat ulang halaman lalu coba lagi.');
+    if (response.status === 429 && !body.message) throw new Error('Terlalu banyak permintaan. Tunggu sebentar lalu coba lagi.');
+    if (!response.ok) {
+      const first = body.errors ? Object.values(body.errors).flat()[0] : null;
+      throw new Error(first || body.message || 'Pemindaian belum berhasil. Coba lagi.');
+    }
+    return body;
+  }
+
+  function scanResultSection(scan) {
+    const tagClass = TAG_BY_LEVEL[scan.level] || 't-soft';
+    const engines = Array.isArray(scan.engines) ? scan.engines : [];
+    return h('section', { class: 'cek-sec cek-scan is-done' },
+      h('h3', {}, 'Hasil pemindaian antivirus'),
+      h('p', { style: 'margin:0' },
+        h('span', { class: `tag ${tagClass}` }, scan.verdict === 'clean' ? 'Tidak ditandai' : (scan.verdict === 'flagged' ? 'Ditandai' : 'Tidak dipindai')),
+        ' ', h('b', {}, scan.headline)),
+      scan.total > 0
+        ? h('p', { class: 'small', style: 'margin:0' }, `${scan.malicious + scan.suspicious} dari ${scan.total} mesin antivirus menandai file ini.`)
+        : null,
+      h('p', { class: 'mut', style: 'margin:0;font-size:14px' }, scan.message),
+      engines.length
+        ? h('ul', { class: 'cek-sources' }, engines.map((e) => h('li', {}, h('b', {}, `${e.engine}`), e.name ? `: ${e.name}` : '')))
+        : null,
+      h('p', { class: 'small', style: 'margin:0' }, 'Dipindai oleh VirusTotal. File ini sudah terkirim ke sana atas izinmu.'));
+  }
+
+  /** Kartu tawaran pindai. Mengembalikan null bila tidak relevan (hash sudah dikenal, atau fitur tidak aktif). */
+  function buildScanOffer(ctx) {
+    const { file, result } = ctx;
+    const max = cekConfig.uploadMaxBytes || 0;
+    const vt = result.checks && result.checks.virustotal;
+    if (!cekConfig.uploadEnabled || !file || !vt || vt.result !== 'unknown') return null;
+
+    if (file.size > max) {
+      return h('section', { class: 'cek-sec cek-scan' }, h('h3', {}, 'Pemindaian antivirus'),
+        h('p', { class: 'small', style: 'margin:0' },
+          `File ini lebih besar dari batas pemindaian antivirus (${formatSize(max)}), jadi hanya sidik jarinya yang dicocokkan.`));
+    }
+
+    const consent = h('input', { type: 'checkbox', id: 'scanConsent' });
+    const button = h('button', { type: 'button', class: 'btn', disabled: 'disabled' }, 'Pindai dengan antivirus');
+    const status = h('p', { class: 'small', role: 'status', 'aria-live': 'polite', style: 'margin:0' });
+    let analysisId = null;
+    let running = false;
+
+    consent.addEventListener('change', () => {
+      if (consent.checked && !running) button.removeAttribute('disabled'); else button.setAttribute('disabled', 'disabled');
+    });
+
+    const say = (text) => status.replaceChildren(text);
+
+    async function waitSeconds(seconds, seq, label) {
+      for (let left = seconds; left > 0; left--) {
+        if (seq !== fileSeq) return false;
+        say(`${label} Cek hasil lagi dalam ${left} detik…`);
+        await sleep(1000);
+      }
+      return seq === fileSeq;
+    }
+
+    async function run() {
+      if (running || !consent.checked) return;
+      running = true;
+      button.setAttribute('disabled', 'disabled');
+      consent.setAttribute('disabled', 'disabled');
+      const seq = fileSeq;
+      try {
+        if (!analysisId) {
+          say('Mengirim file ke VirusTotal…');
+          const form = new FormData();
+          form.append('file', file);
+          form.append('consent', '1');
+          const up = await apiFetch('/jeda/api/cek-file/pindai', { method: 'POST', body: form }, 120000);
+          analysisId = up.analysis_id;
+        }
+        for (let attempt = 0; attempt < SCAN_MAX_POLLS; attempt++) {
+          const label = attempt === 0 ? 'File terkirim. Antivirus sedang memindai.' : 'Antivirus masih memindai.';
+          if (!(await waitSeconds(attempt === 0 ? SCAN_FIRST_POLL_S : SCAN_POLL_EVERY_S, seq, label))) return;
+          say('Mengambil hasil pemindaian…');
+          const res = await apiFetch(`/jeda/api/cek-file/pindai/status?id=${encodeURIComponent(analysisId)}`);
+          if (seq !== fileSeq) return;
+          if (res.status === 'done') {
+            renderFileResult(fileResult, result, ctx.name, { scan: res });
+            revealCard(fileResult);
+            return;
+          }
+          // 'pending' dan 'busy' (kuota VirusTotal penuh sesaat): tunggu dan coba lagi.
+        }
+        say('Pemindaian belum selesai karena VirusTotal sedang ramai. Tekan "Cek hasil lagi" beberapa saat lagi. File tidak perlu dikirim ulang.');
+        button.textContent = 'Cek hasil lagi';
+      } catch (error) {
+        say(error.message);
+        if (analysisId) button.textContent = 'Cek hasil lagi';
+      } finally {
+        running = false;
+        consent.removeAttribute('disabled');
+        if (consent.checked) button.removeAttribute('disabled');
+      }
+    }
+    button.addEventListener('click', run);
+
+    return h('section', { class: 'cek-sec cek-scan' },
+      h('h3', {}, 'Pindai dengan antivirus (opsional)'),
+      h('p', { class: 'small', style: 'margin:0' },
+        'Hasil di atas hanya mencocokkan sidik jari file, dan file baru biasanya belum dikenal. Kamu bisa mengirim file ini ke VirusTotal agar dipindai puluhan antivirus sekaligus.'),
+      h('p', { class: 'cek-notice', style: 'margin:0' },
+        'Kalau kamu setuju, isi file dikirim lewat server Jeda ke VirusTotal. File yang dikirim bisa dilihat peneliti keamanan dan vendor antivirus di sana. Jangan kirim dokumen pribadi, rahasia, atau milik orang lain. Nama file tidak ikut dikirim.'),
+      h('label', { class: 'row', for: 'scanConsent', style: 'gap:8px;align-items:flex-start' }, consent,
+        h('span', { class: 'small' }, 'Saya paham dan mengizinkan file ini dikirim ke VirusTotal untuk dipindai.')),
+      button,
+      status);
+  }
+
   const fileInput = $('#fileInput');
   const fileDrop = $('#fileDrop');
   const fileResult = $('#fileResult');
-  const fileNameInput = $('#fileNameInput');
-  const fileNameButton = $('#fileNameButton');
   const cekConfig = (() => { try { return JSON.parse($('#cekConfig')?.textContent || '{}'); } catch { return {}; } })();
 
-  async function sendFile(summary) {
+  // Nomor urut pemeriksaan file. Dipakai agar pemindaian lama yang masih berjalan tidak menimpa hasil file yang lebih baru.
+  let fileSeq = 0;
+
+  async function sendFile(summary, file = null) {
+    const seq = ++fileSeq;
     const result = await postJson('/jeda/api/cek-file', summary);
-    renderFileResult(fileResult, result, summary.filename);
+    if (seq !== fileSeq) return;
+    const ctx = { file, result, name: summary.filename };
+    renderFileResult(fileResult, result, summary.filename, { offer: buildScanOffer(ctx) });
     revealCard(fileResult);
   }
 
   async function runFileCheck(file) {
     if (!file) return;
-    showMessage(fileResult, `Membaca "${file.name}" di perangkatmu…`);
+    const seq = ++fileSeq; // batalkan pemindaian sebelumnya yang masih menunggu
+    const big = file.size > (cekConfig.maxBytes || 50 * 1024 * 1024);
+    showMessage(fileResult, big
+      ? `File besar (${formatSize(file.size)}), dibaca bertahap di perangkatmu… 0%`
+      : `Membaca "${file.name}" di perangkatmu…`);
+    const onProgress = ({ done, total }) => {
+      if (seq === fileSeq) showMessage(fileResult, `File besar (${formatSize(total)}), dibaca bertahap di perangkatmu… ${Math.floor((done / total) * 100)}%`);
+    };
     try {
       const inspector = window.JedaFileInspect;
       const summary = inspector
-        ? await inspector.inspect(file, cekConfig)
+        ? await inspector.inspect(file, cekConfig, onProgress)
         : { filename: file.name, size: file.size, sha256: null, detected_type: null, content_scanned: false, flags: {} };
       showMessage(fileResult, 'Mencocokkan sidik jari file…');
-      await sendFile(summary);
-    } catch (error) {
-      showMessage(fileResult, error.message);
-    }
-  }
-
-  async function runNameCheck() {
-    const filename = fileNameInput.value.trim();
-    if (!filename) { fileNameInput.focus(); return; }
-    showMessage(fileResult, 'Memeriksa nama file…');
-    fileNameInput.blur();
-    try {
-      await sendFile({ filename, size: 0, sha256: null, detected_type: null, content_scanned: false, flags: {} });
+      await sendFile(summary, file);
     } catch (error) {
       showMessage(fileResult, error.message);
     }
@@ -404,8 +583,6 @@
   ['dragenter', 'dragover'].forEach((type) => fileDrop?.addEventListener(type, (event) => { event.preventDefault(); fileDrop.classList.add('is-over'); }));
   ['dragleave', 'drop'].forEach((type) => fileDrop?.addEventListener(type, (event) => { event.preventDefault(); fileDrop.classList.remove('is-over'); }));
   fileDrop?.addEventListener('drop', (event) => runFileCheck(event.dataTransfer?.files?.[0]));
-  fileNameButton?.addEventListener('click', runNameCheck);
-  fileNameInput?.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); runNameCheck(); } });
 
 
   // ---------- Tombol Penguji Tautan / Penguji File ----------

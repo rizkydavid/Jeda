@@ -53,29 +53,41 @@
                     Penguji File
                 </h2>
                 <span class="small">
-                    File tidak diunggah
+                    File tidak diunggah, kecuali kamu izinkan
                 </span>
             </div>
+            @php
+                $fmtSize = fn (int $b) => $b >= 1073741824
+                    ? rtrim(rtrim(number_format($b / 1073741824, 1, ',', ''), '0'), ',').' GB'
+                    : (int) ($b / 1048576).' MB';
+            @endphp
             <label for="fileInput" id="fileDrop" class="cek-drop" tabindex="0">
                 <b>Pilih file atau tarik ke sini</b>
-                <span class="small">APK, PDF, dokumen, arsip, gambar, apa saja. Maksimal {{ (int) (config('jeda_cek.max_file_bytes') / 1048576) }} MB.</span>
+                <span class="small">APK, PDF, dokumen, arsip, gambar, apa saja. Maksimal {{ $fmtSize((int) config('jeda_cek.max_large_file_bytes')) }}. File di atas {{ $fmtSize((int) config('jeda_cek.max_file_bytes')) }} dibaca sebagian.</span>
             </label>
             <input id="fileInput" type="file" class="cek-visually-hidden"/>
-            <div class="row" style="flex-wrap:wrap;gap:8px">
-                <input id="fileNameInput" aria-label="Nama file" class="jeda-field" style="flex:1 1 200px;min-width:0" maxlength="255" placeholder="atau tulis nama file saja, mis. undangan.apk"/>
-                <button id="fileNameButton" type="button" class="btn ghost" style="white-space:nowrap">Periksa nama file</button>
-            </div>
             <div id="fileResult" aria-live="polite">
                 <p class="mut" style="margin:0">
-                    Belum ada file yang diperiksa. Pilih file di atas, atau tulis namanya lalu tekan "Periksa nama file".
+                    Belum ada file yang diperiksa. Pilih file di atas.
                 </p>
             </div>
         </div>
     </div>
 </main>
 
-<script type="application/json" id="cekConfig">@json(['maxBytes' => (int) config('jeda_cek.max_file_bytes'), 'executable' => config('jeda_cek.executable_extensions'), 'decoy' => config('jeda_cek.decoy_extensions')])</script>
-<script src="{{ asset('js/file-inspect.js') }}" defer></script>
+@php
+    $cekConfig = [
+        'maxBytes' => (int) config('jeda_cek.max_file_bytes'),
+        'maxLargeBytes' => (int) config('jeda_cek.max_large_file_bytes'),
+        'executable' => config('jeda_cek.executable_extensions'),
+        'decoy' => config('jeda_cek.decoy_extensions'),
+        'apkKnown' => array_keys(config('jeda_cek.apk_permissions', [])),
+        'uploadMaxBytes' => \App\Services\Cek\UploadLimit::bytes(),
+        'uploadEnabled' => (bool) config('services.virustotal.key'),
+    ];
+@endphp
+
+<script type="application/json" id="cekConfig">{!! json_encode($cekConfig, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!}</script><script src="{{ asset('js/file-inspect.js') }}" defer></script>
 <script src="{{ asset('js/cek.js') }}" defer></script>
 
 @endsection

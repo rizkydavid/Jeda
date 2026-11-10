@@ -10,7 +10,21 @@
 
 return [
     // Batas ukuran file yang diperiksa di browser (byte). Dipakai di tahap pemeriksaan file.
+    // Sampai ukuran ini file dibaca penuh di browser. Di atasnya sampai max_large_file_bytes file dibaca sebagian dan
+    // bertahap (jenis isi, daftar isi arsip, manifest APK, awal file, dan sidik jari seluruh file). Di atasnya lagi
+    // hanya nama dan ukuran yang diperiksa.
     'max_file_bytes' => 50 * 1024 * 1024,
+    'max_large_file_bytes' => 2 * 1024 * 1024 * 1024,
+
+    // Pemindaian antivirus lewat VirusTotal (opsional, hanya setelah pengguna menyetujui). Isi file DIKIRIM ke
+    // VirusTotal, jadi batasnya kecil. Maksimum mutlak 32 MB (batas unggahan langsung VirusTotal). Batas efektif juga
+    // tidak melebihi upload_max_filesize dan post_max_size milik PHP (lihat UploadLimit).
+    'file_upload' => [
+        'max_bytes' => (int) env('JEDA_UPLOAD_MAX_BYTES', 10 * 1024 * 1024),
+        'hard_cap_bytes' => 32 * 1024 * 1024,
+        'per_minute' => (int) env('JEDA_UPLOAD_PER_MINUTE', 3),
+        'per_hour' => (int) env('JEDA_UPLOAD_PER_HOUR', 15),
+    ],
 
     // Pembukaan tautan oleh server (redirect dan isi halaman). Lihat RedirectTracer.
     'redirect' => [
@@ -24,6 +38,12 @@ return [
 
     // Batas pemakaian API gratis. VirusTotal gratis: 4 permintaan/menit dan 500/hari.
     'virustotal_limits' => ['per_minute' => 4, 'per_day' => 450],
+
+    // Batas pemeriksaan per IP (cek tautan dan cek file). Naikkan lewat .env bila perlu, mis. saat demo ramai.
+    'rate_limits' => [
+        'per_minute' => (int) env('JEDA_CEK_PER_MINUTE', 10),
+        'per_hour' => (int) env('JEDA_CEK_PER_HOUR', 120),
+    ],
 
     // Batas bobot per kelompok sinyal (agar satu jenis tanda tidak mendominasi skor).
     'group_caps' => [
@@ -115,7 +135,7 @@ return [
     ],
 
     // ---------------------------------------------------------------------------------------------
-    // Pemeriksaan file (Tahap 4). File TIDAK diunggah: browser membaca isinya sendiri, lalu hanya
+    // Pemeriksaan file (Tahap 4). Secara bawaan file TIDAK diunggah: browser membaca isinya sendiri, lalu hanya
     // mengirim ringkasan + SHA-256 ke server. Daftar di bawah dipakai server DAN browser (lewat halaman /cek).
     // ---------------------------------------------------------------------------------------------
 
