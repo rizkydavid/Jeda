@@ -34,6 +34,7 @@
         saving: false,
         responses: [],
         xp: defaultXp(),
+        selected: null,    // level yang sedang dipilih di peta
         levels: {},        // statistik per level dari server
         loaded: false,
     };
@@ -106,7 +107,8 @@
     /* ------------------------------------------------------------ tampilan */
     function renderHome() {
         renderPlayer();
-        renderLevels();
+        renderMap();
+        renderDetail();
         renderAside();
     }
 
@@ -150,34 +152,169 @@
         box.append(badge(s.level), main, play);
     }
 
-    function renderLevels() {
-        const container = $('quizLevels');
-        container.innerHTML = '';
-        LEVELS.forEach((item) => {
-            const unlocked = item.id <= state.xp.level;
-            const stats = state.levels[item.id];
+    /* ------------------------------------------------------ peta perjalanan */
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+    const mobileQuery = window.matchMedia ? window.matchMedia('(max-width: 700px)') : { matches: false };
+    const MAP_W = 1400, MAP_H = 613;
 
-            const card = el('button', `quiz-level-card${item.id === state.xp.level ? ' is-current' : ''}`);
-            card.type = 'button';
-            card.disabled = !unlocked;
-            card.setAttribute('aria-label', `Level ${item.id}, ${item.name}${unlocked ? '' : ', terkunci'}`);
+    const ICONS = {
+        check: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        play: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>',
+        lock: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5.5" y="10.5" width="13" height="9.5" rx="2.2" fill="currentColor"/><path d="M8.5 10.5V8a3.5 3.5 0 017 0v2.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
+        flag: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/><path d="M6 5h11l-2.4 3.6L17 12H6z" fill="currentColor"/></svg>',
+        goal: '<svg viewBox="0 0 64 74" aria-hidden="true"><path d="M8 66l6-12 6 12zM46 66l6-14 6 14z" fill="#2c8a5f"/><rect x="14" y="36" width="36" height="28" rx="4" fill="#d6e5ff"/><rect x="20" y="42" width="7" height="9" rx="1.5" fill="#ffd76a"/><rect x="37" y="42" width="7" height="9" rx="1.5" fill="#ffd76a"/><rect x="28" y="52" width="8" height="12" rx="2" fill="#3a63c8"/><circle cx="32" cy="22" r="17" fill="#3d7bff"/><path d="M32 12l9 3.2v6.4c0 5-3.6 8.4-9 10.4-5.4-2-9-5.4-9-10.4v-6.4z" fill="#fff"/><path d="M28 21.5l3 3 5-5.5" fill="none" stroke="#3d7bff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    };
 
-            const status = el('span', 'level-status');
-            if (!unlocked) status.textContent = `🔒 Butuh ${fmt(item.xp_required)} EXP`;
-            else if (stats) status.textContent = `✓ Terbaik ${stats.best_score}%`;
-            else status.textContent = '▶ Mulai latihan';
+    // Titik level pada peta lebar (koordinat gambar 1400 x 613), dan jalur vertikal untuk HP.
+    const DESKTOP_POINTS = [[126, 268], [303, 215], [493, 217], [651, 125], [834, 179], [980, 89], [1140, 189], [1219, 337], [991, 430], [735, 430]];
+    // Pulau dekoratif: [x, y, lebar] dalam koordinat gambar.
+    const DESKTOP_ISLANDS = [[205, 352, 400], [575, 330, 270], [770, 238, 210], [1010, 160, 240], [1255, 305, 360], [855, 505, 430], [1253, 120, 190]];
+    const DESKTOP_CLOUDS = [[60, 580, 360, 130], [1340, 560, 340, 140], [700, 20, 520, 90]];
 
-            card.append(
-                el('span', 'level-num', `Level ${item.id}`),
-                el('span', 'level-icon', item.icon),
-                el('strong', '', item.name),
-                el('span', 'level-desc', item.description),
-                status,
-            );
-            if (item.id === state.xp.level) card.appendChild(el('span', 'level-tag', 'Saat ini'));
-            card.addEventListener('click', () => startLevel(item.id));
-            container.appendChild(card);
+    function mapLayout(vertical) {
+        if (!vertical) {
+            return {
+                width: MAP_W, height: MAP_H,
+                points: DESKTOP_POINTS.map(([x, y]) => ({ left: `${(x / MAP_W) * 100}%`, top: `${(y / MAP_H) * 100}%`, px: x, py: y })),
+                islands: DESKTOP_ISLANDS.map(([x, y, w]) => ({ left: `${(x / MAP_W) * 100}%`, top: `${(y / MAP_H) * 100}%`, size: `${(w / MAP_W) * 100}cqw` })),
+                clouds: DESKTOP_CLOUDS.map(([x, y, w, h]) => ({ left: `${((x - w / 2) / MAP_W) * 100}%`, top: `${((y - h / 2) / MAP_H) * 100}%`, w: `${(w / MAP_W) * 100}%`, h: `${(h / MAP_H) * 100}%` })),
+                goal: { left: `${(1253 / MAP_W) * 100}%`, top: `${(70 / MAP_H) * 100}%` },
+            };
+        }
+        const step = 104, top = 60, height = top + (MAX_LEVEL - 1) * step + 190;
+        const points = LEVELS.map((_, i) => ({ left: `${i % 2 === 0 ? 28 : 72}%`, top: `${top + i * step}px`, px: i % 2 === 0 ? 28 : 72, py: top + i * step }));
+        const islands = [0, 1, 2, 3, 4].map((k) => ({ left: `${k % 2 === 0 ? 32 : 70}%`, top: `${top + k * step * 2 + 28}px`, size: '150px' }));
+        const clouds = [{ left: '-10%', top: `${height - 150}px`, w: '60%', h: '110px' }, { left: '55%', top: '30px', w: '60%', h: '90px' }];
+        return { width: 100, height, points, islands, clouds, goal: { left: '50%', top: `${top + (MAX_LEVEL - 1) * step + 120}px` } };
+    }
+
+    // Kurva halus (Catmull-Rom) melalui semua titik.
+    function smoothPath(pts, upto = pts.length - 1) {
+        if (pts.length < 2 || upto < 1) return '';
+        let d = `M ${pts[0].px} ${pts[0].py}`;
+        for (let i = 0; i < upto; i++) {
+            const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
+            const c1x = p1.px + (p2.px - p0.px) / 6, c1y = p1.py + (p2.py - p0.py) / 6;
+            const c2x = p2.px - (p3.px - p1.px) / 6, c2y = p2.py - (p3.py - p1.py) / 6;
+            d += ` C ${c1x} ${c1y} ${c2x} ${c2y} ${p2.px} ${p2.py}`;
+        }
+        return d;
+    }
+
+    function svgEl(tag, attrs) {
+        const node = document.createElementNS(SVG_NS, tag);
+        Object.entries(attrs).forEach(([k, v]) => node.setAttribute(k, v));
+        return node;
+    }
+
+    function pathLayer(className, layout, currentIndex, baseClass, doneClass) {
+        const svg = svgEl('svg', { class: `map-path ${className}`, viewBox: `0 0 ${layout.width} ${layout.height}`, preserveAspectRatio: 'none', 'aria-hidden': 'true' });
+        svg.appendChild(svgEl('path', { class: baseClass, d: smoothPath(layout.points) }));
+        if (currentIndex > 0) svg.appendChild(svgEl('path', { class: doneClass, d: smoothPath(layout.points, currentIndex) }));
+        return svg;
+    }
+
+    function selectedLevel() { return state.selected || state.xp.level; }
+
+    function renderMap() {
+        const map = $('quizMap');
+        if (!map) return;
+        const vertical = mobileQuery.matches;
+        const layout = mapLayout(vertical);
+        const currentIndex = state.xp.level - 1;
+
+        map.innerHTML = '';
+        map.classList.toggle('is-vertical', vertical);
+
+        const head = el('div', 'map-head');
+        const headIcon = el('span', 'map-head-icon');
+        headIcon.innerHTML = ICONS.flag;
+        const headText = el('div');
+        headText.append(el('h3', '', 'Peta Perjalanan'), el('p', '', 'Selesaikan setiap level untuk menjadi detektif digital yang lebih waspada!'));
+        head.append(headIcon, headText);
+
+        const scene = el('div', 'map-scene');
+        if (vertical) scene.style.height = `${layout.height}px`;
+
+        layout.clouds.forEach((c) => {
+            const cloud = el('span', 'map-cloud');
+            Object.assign(cloud.style, { left: c.left, top: c.top, width: c.w, height: c.h });
+            scene.appendChild(cloud);
         });
+        layout.islands.forEach((isl) => {
+            const island = el('span', 'map-island');
+            island.style.setProperty('--w', isl.size);
+            Object.assign(island.style, { left: isl.left, top: isl.top });
+            island.append(document.createElement('i'), document.createElement('i'));
+            scene.appendChild(island);
+        });
+
+        scene.append(
+            pathLayer('map-path--glow', layout, currentIndex, 'glow-base', 'glow-done'),
+            pathLayer('map-path--line', layout, currentIndex, 'line-base', 'line-done'),
+        );
+
+        const goal = el('span', 'map-goal');
+        goal.innerHTML = ICONS.goal;
+        Object.assign(goal.style, { left: layout.goal.left, top: layout.goal.top });
+        scene.appendChild(goal);
+
+        LEVELS.forEach((item, i) => {
+            const unlocked = item.id <= state.xp.level;
+            const status = !unlocked ? 'is-locked' : item.id < state.xp.level ? 'is-done' : 'is-current';
+            const icon = !unlocked ? ICONS.lock : item.id < state.xp.level ? ICONS.check : ICONS.play;
+            const side = i % 2 === 0 ? 'side-left' : 'side-right';
+
+            const node = el('button', `map-node ${status} ${side}${item.id === selectedLevel() ? ' is-selected' : ''}`);
+            node.type = 'button';
+            node.style.left = layout.points[i].left;
+            node.style.top = layout.points[i].top;
+            node.setAttribute('aria-label', `Level ${item.id}, ${item.name}${unlocked ? '' : ', terkunci'}`);
+            node.setAttribute('aria-pressed', String(item.id === selectedLevel()));
+
+            const dot = el('span', 'map-dot');
+            dot.innerHTML = icon;
+            const label = el('span', 'map-label');
+            label.append(el('b', '', `Level ${item.id}`), el('small', '', item.name));
+            node.append(dot, label);
+            node.addEventListener('click', () => { state.selected = item.id; renderMap(); renderDetail(); });
+            scene.appendChild(node);
+        });
+
+        const tip = el('div', 'map-tip');
+        const tipIcon = el('span', 'map-tip-icon', '💡');
+        tipIcon.setAttribute('aria-hidden', 'true');
+        tip.append(tipIcon, el('span', '', 'Kumpulkan EXP dari jawaban benar untuk membuka level berikutnya!'));
+
+        if (vertical) map.append(head, scene, tip);
+        else { scene.append(head, tip); map.appendChild(scene); }
+    }
+
+    function renderDetail() {
+        const box = $('quizLevelDetail');
+        if (!box) return;
+        box.innerHTML = '';
+        const item = levelInfo(selectedLevel());
+        const unlocked = item.id <= state.xp.level;
+        const stats = state.levels[item.id];
+
+        const main = el('div', 'level-detail-main');
+        const chips = el('div', 'level-detail-chips');
+        chips.append(
+            el('span', '', `+${xpPerCorrect(item.id)} EXP / jawaban benar`),
+            el('span', '', `Bonus 10/10: +${CONFIG.perfectBonus}`),
+        );
+        if (!unlocked) chips.appendChild(el('span', 'is-locked', `🔒 Butuh ${fmt(item.xp_required)} EXP (kurang ${fmt(item.xp_required - state.xp.xp)})`));
+        else if (stats) chips.appendChild(el('span', '', `Terbaik ${stats.best_score}% · ${stats.attempts}x main`));
+        else chips.appendChild(el('span', '', 'Belum dimainkan'));
+        main.append(el('h4', '', `Level ${item.id} · ${item.name}`), el('p', '', item.description), chips);
+
+        const start = el('button', 'quiz-btn primary', unlocked ? `Mulai Level ${item.id}` : 'Terkunci');
+        start.type = 'button';
+        start.disabled = !unlocked;
+        start.addEventListener('click', () => startLevel(item.id));
+
+        box.append(el('div', 'level-detail-icon', item.icon), main, start);
     }
 
     function renderAside() {
@@ -420,6 +557,7 @@
         result.innerHTML = '';
         result.appendChild(wrap);
         $('quizProgressBar').style.width = '100%';
+        state.selected = null;
         renderHome();
         state.saving = false;
     }
@@ -429,6 +567,7 @@
         hide('quizPlay'); hide('quizResult'); show('quizLevelSelect');
         $('quizCorrectCount').textContent = '0';
         $('quizAnsweredCount').textContent = `0/${PER_ROUND}`;
+        state.selected = null;
         loadProgress();
     }
 
@@ -439,6 +578,7 @@
     });
     $('quizBackToLevels').addEventListener('click', backToLevels);
 
+    if (mobileQuery.addEventListener) mobileQuery.addEventListener('change', renderMap);
     renderHome();
     loadProgress();
 })();

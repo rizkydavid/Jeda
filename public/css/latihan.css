@@ -208,61 +208,184 @@
 .quiz-player-name span { font-size: .8rem; color: var(--q-muted); }
 .quiz-player-xp { margin-top: 7px; font-size: .78rem; color: var(--q-muted); }
 
-.quiz-levels {
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 10px;
-    margin-bottom: 20px;
-}
-.quiz-level-card {
+/* Peta perjalanan level (pemandangan langit + pulau melayang) */
+.quiz-map {
+    container-type: inline-size;
     position: relative;
+    margin-bottom: 14px;
+    overflow: hidden;
+    border: 1px solid #2c4aa8;
+    border-radius: 22px;
+    color: #fff;
+    background:
+        radial-gradient(ellipse at 18% -10%, rgba(120, 180, 255, .55), transparent 55%),
+        radial-gradient(ellipse at 85% 110%, rgba(150, 110, 230, .35), transparent 55%),
+        linear-gradient(180deg, #3a73de 0%, #2b4bb0 46%, #1f2f7c 100%);
+    --map-dot: clamp(40px, 5.1cqw, 64px);
+}
+.map-scene { position: relative; aspect-ratio: 1400 / 613; }
+.quiz-map.is-vertical { --map-dot: 48px; }
+.quiz-map.is-vertical .map-scene { aspect-ratio: auto; }
+
+/* Awan dan pulau */
+.map-cloud { position: absolute; border-radius: 50%; background: rgba(255, 255, 255, .22); filter: blur(22px); pointer-events: none; }
+.map-island { position: absolute; width: var(--w); aspect-ratio: 1 / .62; transform: translate(-50%, -26%); pointer-events: none; }
+.map-island::before {
+    content: "";
+    position: absolute;
+    inset: 24% 7% 0;
+    background: linear-gradient(180deg, #4b5db3, #27356f);
+    clip-path: polygon(0 0, 100% 0, 86% 42%, 62% 100%, 40% 100%, 16% 44%);
+}
+.map-island::after {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 40%;
+    border-radius: 50%;
+    background: radial-gradient(ellipse at 50% 35%, #5fb48a, #2f7d63 75%);
+    box-shadow: inset 0 -6px 10px rgba(16, 60, 70, .35);
+}
+.map-island i { position: absolute; z-index: 1; bottom: 62%; width: 7%; aspect-ratio: .8; background: #2c8a5f; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+.map-island i:nth-child(1) { left: 24%; }
+.map-island i:nth-child(2) { left: 66%; bottom: 66%; width: 6%; background: #3a9c6e; }
+
+/* Jalur bercahaya */
+.map-path { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.map-path path { fill: none; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.map-path--glow { filter: blur(5px); }
+.map-path--glow .glow-base { stroke: #7fd4ff; stroke-width: 15; opacity: .5; }
+.map-path--glow .glow-done { stroke: #9cf3d6; stroke-width: 17; opacity: .75; }
+.map-path--line .line-base { stroke: #d9efff; stroke-width: 4; opacity: .85; }
+.map-path--line .line-done { stroke: #fff; stroke-width: 5; }
+
+/* Header dan petunjuk di dalam peta */
+.map-head { position: absolute; z-index: 3; left: 2.2%; top: 4%; display: flex; align-items: center; gap: 12px; max-width: 36%; }
+.map-head-icon { display: grid; place-items: center; flex: 0 0 auto; width: 44px; height: 44px; border-radius: 14px; background: rgba(255, 255, 255, .16); border: 1px solid rgba(255, 255, 255, .28); }
+.map-head-icon svg { width: 22px; height: 22px; }
+.map-head h3 { margin: 0 0 2px; font-size: 1.12rem; color: #fff; }
+.map-head p { margin: 0; font-size: .76rem; line-height: 1.45; color: rgba(255, 255, 255, .82); }
+.map-tip {
+    position: absolute;
+    z-index: 3;
+    left: 2%;
+    bottom: 4%;
     display: flex;
-    flex-direction: column;
-    gap: 3px;
-    min-height: 142px;
-    padding: 14px 12px;
-    border: 1px solid var(--q-line);
+    align-items: center;
+    gap: 10px;
+    max-width: 34%;
+    padding: 10px 14px;
+    border: 1px solid rgba(255, 255, 255, .24);
     border-radius: 16px;
-    background: var(--q-card);
+    background: rgba(24, 44, 120, .55);
+    backdrop-filter: blur(6px);
+    font-size: .76rem;
+    line-height: 1.4;
+    color: #fff;
+}
+.map-tip-icon { display: grid; place-items: center; flex: 0 0 auto; width: 30px; height: 30px; border-radius: 50%; background: rgba(255, 213, 90, .25); font-size: 1rem; }
+
+/* Tujuan (menara) */
+.map-goal { position: absolute; z-index: 2; width: clamp(34px, 6.2cqw, 74px); transform: translate(-50%, -62%); pointer-events: none; filter: drop-shadow(0 6px 10px rgba(10, 20, 70, .35)); }
+
+/* Titik level */
+.map-node {
+    position: absolute;
+    z-index: 2;
+    width: var(--map-dot);
+    height: var(--map-dot);
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: none;
     color: inherit;
     font: inherit;
-    text-align: left;
     cursor: pointer;
-    transition: transform .18s, border-color .18s, box-shadow .18s;
+    transform: translate(-50%, -50%);
 }
-.quiz-level-card:hover:not(:disabled) {
-    transform: translateY(-2px);
-    border-color: #86a5f5;
-    box-shadow: 0 8px 20px rgba(50, 94, 180, .1);
-}
-.quiz-level-card:focus-visible { outline: 3px solid rgba(60, 130, 210, .35); outline-offset: 2px; }
-.quiz-level-card:disabled { cursor: not-allowed; opacity: .6; background: var(--q-surface-2); }
-.quiz-level-card.is-current { border-color: #6f93f3; box-shadow: 0 0 0 2px rgba(55, 104, 232, .16); }
-.quiz-level-card .level-num { font-size: .68rem; font-weight: 850; letter-spacing: .09em; text-transform: uppercase; color: var(--q-muted); }
-.quiz-level-card .level-icon { font-size: 1.45rem; line-height: 1.2; }
-.quiz-level-card strong { font-size: .95rem; color: var(--q-ink); }
-.quiz-level-card .level-desc {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    font-size: .74rem;
-    line-height: 1.45;
-    color: var(--q-muted);
-}
-.quiz-level-card .level-status { margin-top: auto; padding-top: 7px; font-size: .7rem; font-weight: 800; color: var(--q-blue); }
-.quiz-level-card:disabled .level-status { color: var(--q-muted); }
-.quiz-level-card .level-tag {
+.map-node::before {
+    content: "";
     position: absolute;
-    top: 10px;
-    right: 10px;
-    padding: 2px 7px;
-    border-radius: 999px;
-    background: var(--q-chip);
-    color: var(--q-chip-ink);
-    font-size: .6rem;
-    font-weight: 850;
+    left: -26%;
+    top: 58%;
+    width: 152%;
+    height: 50%;
+    border-radius: 50%;
+    background: radial-gradient(ellipse at 50% 40%, #35529f, #1b2d6e 80%);
+    border: 1px solid rgba(160, 205, 255, .5);
+    box-shadow: 0 0 16px rgba(120, 190, 255, .35);
 }
+.map-dot {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    border: 3px solid rgba(255, 255, 255, .92);
+    border-radius: 50%;
+    color: #fff;
+    background: linear-gradient(150deg, #6b83c4, #46598f);
+    box-shadow: 0 6px 14px rgba(8, 18, 70, .35);
+    transition: transform .18s;
+}
+.map-dot svg { width: 52%; height: 52%; }
+.map-node:hover .map-dot { transform: scale(1.07); }
+.map-node:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
+.map-node.is-done .map-dot { background: linear-gradient(150deg, #34d39b, #14a073); box-shadow: 0 0 0 4px rgba(80, 230, 170, .28), 0 6px 14px rgba(8, 18, 70, .35); }
+.map-node.is-current .map-dot { background: linear-gradient(150deg, #3d8bff, #2b6bf0); box-shadow: 0 0 0 5px rgba(110, 190, 255, .35), 0 0 22px rgba(110, 190, 255, .75); animation: map-pulse 2.4s ease-in-out infinite; }
+.map-node.is-locked .map-dot { color: rgba(255, 255, 255, .92); }
+.map-node.is-selected .map-dot { outline: 3px solid #ffe28a; outline-offset: 3px; }
+@keyframes map-pulse { 50% { box-shadow: 0 0 0 9px rgba(110, 190, 255, .16), 0 0 28px rgba(110, 190, 255, .9); } }
+
+.map-label {
+    position: absolute;
+    z-index: 1;
+    left: 50%;
+    top: calc(100% + 4px);
+    transform: translateX(-50%);
+    min-width: clamp(62px, 8.2cqw, 112px);
+    max-width: clamp(78px, 10.5cqw, 128px);
+    padding: 5px 8px 6px;
+    border-radius: 12px;
+    background: rgba(236, 243, 255, .94);
+    box-shadow: 0 6px 14px rgba(8, 18, 70, .28);
+    color: #1c2f6b;
+    text-align: center;
+    line-height: 1.2;
+    pointer-events: none;
+}
+.map-label b { display: block; font-size: clamp(.62rem, 1.3cqw, .86rem); }
+.map-label small { display: block; font-size: clamp(.56rem, 1.15cqw, .74rem); font-weight: 700; color: #3a4f8f; }
+
+/* Tampilan vertikal (HP) */
+.quiz-map.is-vertical .map-head { position: static; max-width: none; padding: 16px 16px 0; }
+.quiz-map.is-vertical .map-tip { position: static; max-width: none; margin: 4px 14px 14px; }
+.quiz-map.is-vertical .map-label { top: 50%; min-width: 0; max-width: none; width: 116px; transform: translateY(-50%); }
+.quiz-map.is-vertical .map-label b { font-size: .8rem; }
+.quiz-map.is-vertical .map-label small { font-size: .72rem; }
+.quiz-map.is-vertical .map-node.side-left .map-label { left: calc(100% + 16px); }
+.quiz-map.is-vertical .map-node.side-right .map-label { left: auto; right: calc(100% + 16px); }
+.quiz-map.is-vertical .map-goal { width: 62px; }
+
+/* Detail level terpilih */
+.quiz-level-detail {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding: 16px 18px;
+    border: 1px solid var(--q-line);
+    border-radius: 18px;
+    background: linear-gradient(120deg, var(--q-surface), var(--q-surface-2));
+}
+.level-detail-icon { display: grid; place-items: center; width: 58px; height: 58px; border-radius: 17px; background: var(--q-chip); font-size: 1.7rem; }
+.level-detail-main { min-width: 0; }
+.level-detail-main h4 { margin: 0 0 3px; font-size: 1.02rem; color: var(--q-ink); }
+.level-detail-main p { margin: 0 0 9px; font-size: .84rem; line-height: 1.55; color: var(--q-muted); }
+.level-detail-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.level-detail-chips span { padding: 4px 10px; border-radius: 999px; background: var(--q-chip); color: var(--q-chip-ink); font-size: .74rem; font-weight: 800; }
+.level-detail-chips span.is-locked { background: var(--q-track); color: var(--q-muted); }
 
 .quiz-rules { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; margin: 0; padding: 0; list-style: none; }
 .quiz-rules li { padding: 11px 12px; border: 1px solid var(--q-line); border-radius: 13px; background: var(--q-surface-2); font-size: .78rem; line-height: 1.5; color: var(--q-muted); }
@@ -473,8 +596,6 @@
     .quiz-orbit { width: 160px; height: 160px; }
 }
 @media (max-width: 700px) {
-    .quiz-levels { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .quiz-level-card { min-height: 0; }
     .quiz-rules { grid-template-columns: 1fr; }
 }
 @media (max-width: 600px) {
@@ -486,6 +607,8 @@
     .quiz-pill { padding: 7px 9px; font-size: .74rem; }
     .quiz-panel { padding: 18px; border-radius: 20px; }
     .quiz-player { grid-template-columns: auto minmax(0, 1fr); }
+    .quiz-level-detail { grid-template-columns: auto minmax(0, 1fr); }
+    .quiz-level-detail .quiz-btn { grid-column: 1 / -1; }
     .quiz-player .quiz-btn { grid-column: 1 / -1; }
     .quiz-choices { grid-template-columns: 1fr; }
     .quiz-choice { min-height: 0; }
@@ -495,5 +618,5 @@
     .quiz-result-grid .quiz-stat:last-child { grid-column: 1 / -1; }
 }
 @media (prefers-reduced-motion: reduce) {
-    .quiz-choice, .quiz-bar > span, .quiz-orbit, .quiz-levelup, .quiz-level-card { transition: none; animation: none; }
+    .quiz-choice, .quiz-bar > span, .quiz-orbit, .quiz-levelup, .map-dot { transition: none; animation: none !important; }
 }

@@ -23,7 +23,8 @@
                 <p class="quiz-intro">Setiap jawaban benar memberi EXP. Kumpulkan EXP dari ronde ke ronde untuk membuka level berikutnya. Soal dipilih acak dan berganti setiap hari.</p>
 
                 <div class="quiz-player" id="quizPlayer"></div>
-                <div class="quiz-levels" id="quizLevels"></div>
+                <div class="quiz-map" id="quizMap"></div>
+                <div class="quiz-level-detail" id="quizLevelDetail" aria-live="polite"></div>
 
                 <ul class="quiz-rules">
                     <li><b>EXP per jawaban benar</b>Makin tinggi level, makin besar EXP-nya.</li>
